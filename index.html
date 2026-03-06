@@ -728,19 +728,9 @@ function dlPastCSV() {
 
 // ── EMAIL ──
 function sendEmail() {
-  const date = new Date().toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'});
-  const ord  = items.filter(i => i.order > 0);
+  const ord     = items.filter(i => i.order > 0);
   const subject = encodeURIComponent(`Pet Valu Order — ${store} — ${new Date().toLocaleDateString('en-CA')}`);
-  let body = `Pet Valu Order\nStore: ${store}\nDate: ${date}\n\n`;
-  body += `ITEM #       ORDER   ON HAND\n`;
-  body += `${'─'.repeat(36)}\n`;
-  ord.forEach(i => {
-    body += `${i.itemNum.padEnd(14)}${String(i.order).padEnd(8)}${i.qoh}\n`;
-  });
-  body += `\n${'─'.repeat(36)}\n`;
-  body += `Total items: ${ord.length}\n\n`;
-  body += `--- Raw data for computer ---\n`;
-  body += JSON.stringify({store, date: new Date().toLocaleDateString('en-CA'), items: ord.map(i => ({item: i.itemNum, order: i.order, qoh: i.qoh}))}, null, 2);
+  const body    = JSON.stringify({store, date: new Date().toLocaleDateString('en-CA'), items: ord.map(i => ({item: i.itemNum, order: i.order, qoh: i.qoh}))}, null, 2);
   window.location.href = `mailto:sarniapetvalu@gmail.com?subject=${subject}&body=${encodeURIComponent(body)}`;
 }
 
