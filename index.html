@@ -386,6 +386,7 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
   <div class="rev-actions">
     <button class="btn-primary" onclick="finalise()">Save &amp; Copy for Computer</button>
     <button class="btn-secondary" onclick="sendEmail()">Send via Email</button>
+    <button class="btn-secondary" id="driveBtn" onclick="saveToDrive()">Save to Drive</button>
     <button class="btn-secondary" onclick="dlJSON()">Download JSON</button>
     <button class="btn-secondary" onclick="dlCSV()">Save as Spreadsheet</button>
     <button class="btn-ghost" onclick="goTo('s-entry')">Continue Adding Items</button>
@@ -1035,6 +1036,104 @@ refreshNext = function() {
   }
   syncQwertyButtons();
 };
+
+// ── GOOGLE DRIVE UPLOAD ──
+const SA_EMAIL  = 'petvalu-drive-uploader@pet-valu-orders.iam.gserviceaccount.com';
+const SA_KEY    = `-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDRDJgTYKvhO+Iw
+w4S1NUZOz5pmkrY991glwWrt3uIgs5xG+tEyT2bOUJKEbo5KmekMui4Pb0HGwbux
+/t97Ox22HG8j5FusC/BBTI0aK8CzMOU+PCoJTrmUff3xOD0hpTu9xYRfI0OO3aSD
+x9Q78qRuzuHcSUwdjNIHF2EJtvxOiK8vqY6TxpkWk/pB8vZ84MIgTjzcyBVEaaCQ
+p8qHEJnoeRlxZjHUw0RX+bkHCVC/bmtJaoyBgpYnhypv3RDxbh0S2W33DFXCVR2/
+P4FhqcJJ/ynlaSiPZvohSsmCIF5vmbLCdg/BVCAZ01qydya0rqwKA4NE6QPkoiSy
+yuuzsJobAgMBAAECggEANFACflbirCpgH/PNccszHOW2rZRpJniPBmOwbnYoACby
+JJD/aKeWAmsHPzyrPt/lAdpVTGd6/lHctl4hbqUMelYDOegbSKJ0LOMLLFFml3DU
+7Q4BNvMMXaxpr8NzCMhgeszCo0wfy9CLKq8G3TmLDG+Y9ZciBQMIS9392oCAAuad
+eCLXJvHPqQMV7niX58u6AzsqQSl9Nj4SG2QgPHyhSrD5jXr2kHc6bxbyRBkndmrC
+Q0CpwIjYTe7pIEcaI2f2IvsQluaGe+JkdCXb5V6p0WViESI1wiMoVCV2ofzDrVww
+3c8cWasrP+k9yAgu/e7E2s/c/OnoPepClWHdb0pqgQKBgQD05kGfOOThXVWvWYaz
+dndij6i703NNsnNt4yhuD8sD4KU5FTC/R0rxLz7McWUFqQ2bIALf0sc2eTzVQcgt
+nFB3BQEXR4hb44CcQ01rKzMZeNw5Vj5kOKWAWbf9byAgwFf10fpTIimxoxzyhnKP
+DD2NniveIbWWZjMpqnmnwne8NwKBgQDahld2UgAVtnQBtH8kzGlYVp9MpR7bjgoM
+UT1+bFTbGUZyvcr8/SU8VSpLUceUBdwOob3jHFWVxaehnjfw57CbJM3LCpDBI1/d
+StUdR8gXtS0gKTMmrMhONUA1mtCy6XO3idV9i9ExGbuwFPKAFd633yfx3OlrX6yp
+nhoGe/bHPQKBgE+inE4pUwwRrK5Df3DWIgYzztuc686lK7Hc/yWjDxIot7FzOZHJ
+ng4FnfcfHImVqm36H9Umlk8ZZ3W1WWGzhdreDrfCNA4lUYn+vKsPtiMfUQV4DPvM
+C81L32+S9jCQO0odSLhF0KcJ8nzOyWvIwC9P8tXdwk2w2AxBeiPaMdNLAoGBAJX2
+oakKRxKffmb5JlPrj9PWxkWD/3QuusiPLANJdsZRRx5RDy+kzdvkmjzMJ4l2p/jG
+mJh2BmndFdf8y2kgpvshO7U+T+6rRwuHYk9Qxok2hXxPqdG9u0yokKL41oYhXY80
+IPWicPIgNcR166Fo4MoQc8owj2NnageQ/0053zYFAoGBAKpgatPoCgNYMFapahzU
+Ep7+WTxfb1VJUpQVfW3YiHZXK4ORmjDs5Iz0M5s63lCZ0sj6PvIK7b1/9+vIUSLC
+GzV90oGRbVnBYauMxUPMBe9oV+M/JnjuksGD+dgDtBKbShd+AuVXhOpjudIHKsBV
+xHiaesvHegPlLwDU09iyEfyl
+-----END PRIVATE KEY-----`;
+const DRIVE_FOLDER = '1Qc45zFydu0Z0KqXYOIjCR8YuoaQuPimA';
+
+function b64url(str) {
+  return btoa(unescape(encodeURIComponent(str))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+function b64urlBuf(buf) {
+  return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+
+async function getAccessToken() {
+  const now = Math.floor(Date.now()/1000);
+  const header  = b64url(JSON.stringify({alg:'RS256',typ:'JWT'}));
+  const payload = b64url(JSON.stringify({iss:SA_EMAIL,scope:'https://www.googleapis.com/auth/drive.file',aud:'https://oauth2.googleapis.com/token',exp:now+3600,iat:now}));
+  const sigInput = `${header}.${payload}`;
+
+  const pemBody = SA_KEY.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----/g,'').replace(/\s+/g,'');
+  const derBuf  = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0)).buffer;
+  const key = await crypto.subtle.importKey('pkcs8', derBuf, {name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'}, false, ['sign']);
+  const sigBuf = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(sigInput));
+  const jwt = `${sigInput}.${b64urlBuf(sigBuf)}`;
+
+  const res  = await fetch('https://oauth2.googleapis.com/token', {
+    method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:`grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`
+  });
+  const data = await res.json();
+  if (!data.access_token) throw new Error(data.error_description || 'Token error');
+  return data.access_token;
+}
+
+async function uploadFileToDrive(token, filename, content, mimeType) {
+  const meta = JSON.stringify({name:filename, parents:[DRIVE_FOLDER]});
+  const boundary = 'pv_boundary_xyz';
+  const body = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n${content}\r\n--${boundary}--`;
+  const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+    method:'POST',
+    headers:{'Authorization':`Bearer ${token}`,'Content-Type':`multipart/related; boundary=${boundary}`},
+    body
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || 'Upload failed'); }
+  return await res.json();
+}
+
+async function saveToDrive() {
+  const btn = document.getElementById('driveBtn');
+  const orig = btn.textContent;
+  btn.textContent = 'Uploading...'; btn.disabled = true;
+  try {
+    const date = new Date().toLocaleDateString('en-CA');
+    const base = `${operator}_${store.replace(/ /g,'_')}_${date}`;
+    const ord  = items.filter(i=>i.itemNum);
+    const jsonContent = JSON.stringify({store,date,items:ord.map(i=>({item:i.itemNum,order:i.cases?-i.order:i.order,qoh:i.qoh}))},null,2);
+    let csvContent = 'Store,Date,Item #,Order Qty,Cases,On Hand\n';
+    ord.forEach(i=>{const a=Math.abs(i.order);const c=i.cases?(a===1?'case':'cases'):'';csvContent+=`"${store}","${date}","${i.itemNum}",${a},"${c}",${i.qoh}\n`;});
+
+    const token = await getAccessToken();
+    await uploadFileToDrive(token, base+'.json', jsonContent, 'application/json');
+    await uploadFileToDrive(token, base+'.csv',  csvContent,  'text/csv');
+    btn.textContent = '✓ Saved to Drive'; btn.style.color = 'var(--accent)';
+    setTimeout(()=>{ btn.textContent=orig; btn.style.color=''; btn.disabled=false; }, 3000);
+  } catch(e) {
+    btn.textContent = 'Upload failed'; btn.style.color = 'var(--red)';
+    setTimeout(()=>{ btn.textContent=orig; btn.style.color=''; btn.disabled=false; }, 3000);
+    console.error('Drive upload error:', e);
+  }
+}
+
 </script>
 </body>
 </html>
