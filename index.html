@@ -113,12 +113,22 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
 .k.kaccent { background: var(--accent); color: #000; font-size: 13px; font-family: 'Figtree', sans-serif; font-weight: 800; border-color: var(--accent); }
 .k.kaccent:active { background: var(--accent2); transform: scale(0.93); }
 .k.kblue { background: var(--blue); color: #000; font-size: 13px; font-family: 'Figtree', sans-serif; font-weight: 800; border-color: var(--blue); }
+.k.kprev { background: var(--s3); color: var(--text2); font-size: 13px; font-family: 'Figtree', sans-serif; font-weight: 800; border-color: var(--border2); }
+.k.kprev:active { background: var(--border); transform: scale(0.93); }
+.k.kprev.disabled { opacity: 0.3; pointer-events: none; }
 .k.kblue:active { opacity: 0.85; transform: scale(0.93); }
 .k-sub { font-size: 9px; font-weight: 700; letter-spacing: 0.6px; opacity: 0.65; font-family: 'Figtree', sans-serif; }
 .k-review { grid-column: span 4; margin-top: 2px; width: 100%; padding: 15px; border-radius: 13px; border: none; font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; background: var(--s2); color: var(--muted); transition: background 0.2s, color 0.2s; }
 .k-review.on { background: var(--accent); color: #000; }
 .k-review:active { opacity: 0.88; }
 
+
+/* ── CASES TOGGLE ── */
+.cases-toggle-row { display: none; justify-content: center; gap: 8px; padding: 8px 14px 0; }
+.cases-toggle-row.show { display: flex; }
+.cases-btn { flex: 1; padding: 10px 0; border-radius: 11px; border: 1px solid var(--border); background: var(--s2); font-family: 'Figtree', sans-serif; font-size: 13px; font-weight: 700; color: var(--text2); cursor: pointer; transition: all 0.15s; }
+.cases-btn.active { background: var(--accentd); border-color: var(--accent); color: var(--accent); }
+.cases-btn:active { opacity: 0.8; }
 
 /* ── QWERTY ── */
 .kbd-wrap { flex-shrink: 0; background: var(--s1); border-top: 1px solid var(--border); display: flex; flex-direction: column; }
@@ -278,6 +288,10 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
     <div class="e-context" id="eCtx"></div>
   </div>
 
+  <div class="cases-toggle-row" id="casesToggleRow">
+    <button class="cases-btn active" id="casesBtnQty"  onclick="setCasesMode(false)">QTY</button>
+    <button class="cases-btn"        id="casesBtnCases" onclick="setCasesMode(true)">CASES</button>
+  </div>
   <div class="kbd-wrap" id="kbdWrap">
     <div class="kbd-toggle-bar">
       <button class="kbd-toggle" id="kbdToggleBtn" onclick="toggleKbd()">ABC</button>
@@ -289,10 +303,7 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
       <button class="k" onclick="kp('1')">1</button>
       <button class="k" onclick="kp('2')">2</button>
       <button class="k" onclick="kp('3')">3</button>
-      <button class="k util" onclick="kpBack()">
-        <svg style="width:16px;height:16px;stroke:currentColor;stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-        <span class="k-sub">Back</span>
-      </button>
+      <button class="k kprev" id="prevBtn" onclick="kpBack()">Prev.</button>
       <button class="k" onclick="kp('4')">4</button>
       <button class="k" onclick="kp('5')">5</button>
       <button class="k" onclick="kp('6')">6</button>
@@ -504,13 +515,16 @@ function kpNext() {
   if (editIdx >= 0) { saveInlineEdit(); return; }
   if (!curValue && curField === 'item') { showToast('Enter an item number first'); return; }
   curRow[curField] = curValue;
+  // Save cases flag when leaving order field
+  if (curField === 'order') curRow.cases = casesMode;
   const idx = FIELDS.indexOf(curField);
   if (idx < FIELDS.length - 1) { curField = FIELDS[idx+1]; curValue = curRow[curField]||''; refreshDisp(); refreshNext(); }
   else commitRow();
 }
 function commitRow() {
   if (!curRow.item) { showToast('Item number is empty'); return; }
-  items.push({ id:nextId++, itemNum:curRow.item, order:parseInt(curRow.order)||0, qoh:parseInt(curRow.qoh)||0 });
+  items.push({ id:nextId++, itemNum:curRow.item, order:parseInt(curRow.order)||0, qoh:parseInt(curRow.qoh)||0, cases:!!curRow.cases });
+  casesMode = false; curRow.cases = false; setCasesMode(false);
   saveDraft(); curRow={item:'',order:'',qoh:''}; curField='item'; curValue='';
   renderEntryItems(); refreshDisp(); refreshNext(); refreshReview();
   showToast('Saved');
@@ -603,7 +617,7 @@ function renderEntryItems() {
     const eq = (editIdx===idx && editField==='qoh')   ? ' editing-blue' : '';
     return `<div class="item-row">
       <div class="item-cell ic-num${ef}"  onclick="startEdit(${idx},'item')">${it.itemNum}</div>
-      <div class="item-cell ic-qty${eo}" onclick="startEdit(${idx},'order')">${it.order}</div>
+      <div class="item-cell ic-qty${eo}" onclick="startEdit(${idx},'order')">${it.order}${it.cases ? '<span style="color:var(--accent);font-size:9px;font-weight:700;display:block;line-height:1.1">' + (it.order===1?'case':'cases') + '</span>' : ''}</div>
       <div class="item-cell ic-qoh${eq}"  onclick="startEdit(${idx},'qoh')">${it.qoh}</div>
       <button class="del-btn" onclick="deleteEntryItem(${idx})">
         <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -629,7 +643,7 @@ function renderReviewList() {
     const idx = items.indexOf(it);
     return `<div class="rev-t-row">
       <div class="rev-cell rc-num"   onclick="openOverlay(${idx},'item')">${it.itemNum}</div>
-      <div class="rev-cell rc-order" onclick="openOverlay(${idx},'order')">${it.order}</div>
+      <div class="rev-cell rc-order" onclick="openOverlay(${idx},'order')">${it.cases ? it.order + '<span style="color:var(--accent);font-size:10px;font-weight:700;display:block;line-height:1.2">' + (it.order === 1 ? 'case' : 'cases') + '</span>' : it.order}</div>
       <div class="rev-cell rc-qoh"   onclick="openOverlay(${idx},'qoh')">${it.qoh}</div>
       <button class="rc-del" onclick="deleteReviewItem(${idx})">
         <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -737,14 +751,14 @@ function dlPastCSV() {
 function sendEmail() {
   const ord     = items.filter(i => i.order > 0);
   const subject = encodeURIComponent(`Pet Valu Order — ${store} — ${new Date().toLocaleDateString('en-CA')}`);
-  const body    = JSON.stringify({store, date: new Date().toLocaleDateString('en-CA'), items: ord.map(i => ({item: i.itemNum, order: i.order, qoh: i.qoh}))}, null, 2);
+  const body    = JSON.stringify({store, date: new Date().toLocaleDateString('en-CA'), items: ord.map(i => ({item: i.itemNum, order: i.order, qoh: i.qoh, ...(i.cases ? {cases: true} : {})}))}, null, 2);
   window.location.href = `mailto:sarniapetvalu@gmail.com?subject=${subject}&body=${encodeURIComponent(body)}`;
 }
 
 // ── FINALISE ──
 function finalise() {
   archiveOrder(); clearDraft();
-  const p={store,date:new Date().toLocaleDateString('en-CA'),items:items.filter(i=>i.order>0).map(i=>({item:i.itemNum,order:i.order,qoh:i.qoh}))};
+  const p={store,date:new Date().toLocaleDateString('en-CA'),items:items.filter(i=>i.order>0).map(i=>({item:i.itemNum,order:i.order,qoh:i.qoh,...(i.cases?{cases:true}:{})}))};
   copyTxt(JSON.stringify(p,null,2),'Order saved and copied');
   items=[]; nextId=1; goTo('s-store');
 }
@@ -765,6 +779,15 @@ function copyTxt(text,msg) {
 function doDownload(csv,name) { const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=name;a.click(); }
 let _tt;
 function showToast(msg) { const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),2000); }
+
+// ── CASES MODE ──
+let casesMode = false;
+
+function setCasesMode(val) {
+  casesMode = val;
+  document.getElementById('casesBtnQty').classList.toggle('active', !val);
+  document.getElementById('casesBtnCases').classList.toggle('active', val);
+}
 
 // ── INIT ──
 refreshDisp(); refreshNext(); refreshReview();
@@ -826,6 +849,17 @@ refreshNext = function() {
   // Hide ABC toggle for non-item fields
   const togBar = document.querySelector('.kbd-toggle-bar');
   if (togBar) togBar.style.display = curField === 'item' ? 'flex' : 'none';
+  // Show cases toggle only on order field
+  const casesRow = document.getElementById('casesToggleRow');
+  if (casesRow) casesRow.classList.toggle('show', curField === 'order' && editIdx < 0);
+  // Reset cases mode when leaving order field
+  if (curField !== 'order') { casesMode = false; setCasesMode(false); }
+  // Prev button: hide on first field
+  const prevBtn = document.getElementById('prevBtn');
+  if (prevBtn) {
+    const idx = FIELDS.indexOf(curField);
+    prevBtn.classList.toggle('disabled', idx === 0 || editIdx >= 0);
+  }
   syncQwertyButtons();
 };
 </script>
