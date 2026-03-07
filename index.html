@@ -241,8 +241,16 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
 <body>
 
 <!-- ══ STORE SELECT ══ -->
-<div id="s-store" class="screen active">
-  <div class="brand-line">Pet Valu <span style="color:var(--accent);font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace;vertical-align:middle;margin-left:6px">v1.6</span></div>
+<div id="s-operator" class="screen active" style="justify-content:center;padding:0 28px">
+  <div class="brand-line">Pet Valu <span style="color:var(--accent);font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace;vertical-align:middle;margin-left:6px">v2.0</span></div>
+  <div class="store-heading">Who is doing<br>the order?</div>
+  <div class="store-list">
+    <button class="store-btn" onclick="selectOperator('Nipun')"><span class="store-btn-name">Nipun</span><span class="store-btn-arr">›</span></button>
+    <button class="store-btn" onclick="selectOperator('Shruti')"><span class="store-btn-name">Shruti</span><span class="store-btn-arr">›</span></button>
+  </div>
+</div>
+
+<div id="s-store" class="screen">
   <div class="store-heading">Which store<br>today?</div>
   <div class="store-list">
     <button class="store-btn" onclick="selectStore('Lakeshore Rd')"><span class="store-btn-name">Lakeshore Rd</span><span class="store-btn-arr">›</span></button>
@@ -365,6 +373,10 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
       <div><div class="ic-store" id="rStore"></div><div class="ic-meta" id="rMeta"></div></div>
       <div class="ic-badge" id="rBadge"></div>
     </div>
+    <div style="padding:0 4px 8px">
+      <input id="rSearch" type="text" placeholder="Search items..." oninput="filterReview(this.value)"
+        style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-family:'Figtree',sans-serif;font-size:15px;outline:none">
+    </div>
     <div class="rev-hint">Tap any cell to edit</div>
     <div class="rev-t-head"><div>Item #</div><div>Order</div><div>On Hand</div><div></div></div>
     <div id="rList"></div>
@@ -410,11 +422,17 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
     <div class="info-card" style="margin-top:14px">
       <div><div class="ic-store" id="pStore"></div><div class="ic-meta" id="pMeta"></div></div>
     </div>
+    <div style="padding:0 4px 8px">
+      <input id="pSearch" type="text" placeholder="Search items..." oninput="filterPast(this.value)"
+        style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-family:'Figtree',sans-serif;font-size:15px;outline:none">
+    </div>
     <div class="t-head"><div>Item #</div><div>Order</div><div>On Hand</div></div>
     <div id="pList"></div>
   </div>
   <div class="past-actions">
     <button class="btn-primary" onclick="copyPast()">Copy for Computer</button>
+    <button class="btn-secondary" onclick="sendPastEmail()">Send via Email</button>
+    <button class="btn-secondary" onclick="dlPastJSON()">Download JSON</button>
     <button class="btn-secondary" onclick="dlPastCSV()">Save as Spreadsheet</button>
   </div>
 </div>
@@ -465,7 +483,7 @@ const LABELS  = { item:'Item Number', order:'Order Qty', qoh:'On Hand' };
 const PROMPTS = { item:'enter item #', order:'enter qty', qoh:'on hand' };
 const HK = 'pv_hist_v4', DP = 'pv_draft_v4_';
 
-let store = '', items = [], curField = 'item', curValue = '', curRow = {item:'',order:'',qoh:''};
+let operator = '', store = '', items = [], curField = 'item', curValue = '', curRow = {item:'',order:'',qoh:''};
 let pastOrder = null, nextId = 1;
 
 // Inline edit state (entry screen)
@@ -482,7 +500,7 @@ const saveDraft = () => { try{localStorage.setItem(DP+store,JSON.stringify(items
 const clearDraft= () => { try{localStorage.removeItem(DP+store)}catch{} };
 function archiveOrder() {
   const h = loadHist();
-  h.unshift({ id:Date.now(), store, date:new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}), isoDate:new Date().toLocaleDateString('en-CA'), items:items.filter(i=>i.itemNum) });
+  h.unshift({ id:Date.now(), operator, store, date:new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}), isoDate:new Date().toLocaleDateString('en-CA'), items:items.filter(i=>i.itemNum) });
   saveHist(h.slice(0,50));
 }
 
@@ -490,6 +508,12 @@ function archiveOrder() {
 function goTo(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+}
+
+// ── OPERATOR SELECT ──
+function selectOperator(name) {
+  operator = name;
+  goTo('s-store');
 }
 
 // ── STORE SELECT ──
@@ -637,10 +661,15 @@ function renderEntryItems() {
       </button>
     </div>`;
   }).join('');
+  // Auto-scroll to latest item
+  const area = document.getElementById('itemsArea');
+  if (area) area.scrollTop = area.scrollHeight;
 }
 
 // ── REVIEW SCREEN ──
 function goToReview() {
+  const s = document.getElementById('rSearch'); if(s) s.value='';
+  filterReview('');
   const ord = items.filter(i=>i.itemNum);
   if (!ord.length) { showToast('No items with an order quantity yet'); return; }
   renderReviewList();
@@ -747,6 +776,7 @@ function renderHist() {
 }
 function delHist(id) { if(!confirm('Delete this order?'))return; saveHist(loadHist().filter(o=>o.id!==id)); renderHist(); }
 function viewPast(id) {
+  const s = document.getElementById('pSearch'); if(s) s.value='';
   pastOrder=loadHist().find(o=>o.id===id); if(!pastOrder)return;
   document.getElementById('pTitle').textContent=pastOrder.store;
   document.getElementById('pStore').textContent=pastOrder.store;
@@ -773,7 +803,7 @@ function dlPastCSV() {
 // ── EMAIL ──
 function sendEmail() {
   const ord     = items.filter(i => i.itemNum);
-  const subject = `Pet Valu Order — ${store} — ${new Date().toLocaleDateString('en-CA')}`;
+  const subject = `Pet Valu Order — ${operator} — ${store} — ${new Date().toLocaleDateString('en-CA')}`;
   const body    = JSON.stringify({store, date: new Date().toLocaleDateString('en-CA'), items: ord.map(i => ({item: i.itemNum, order: i.cases ? -i.order : i.order, qoh: i.qoh}))}, null, 2);
   if (navigator.share) {
     navigator.share({ title: subject, text: body }).catch(() => {});
@@ -788,9 +818,52 @@ function dlJSON() {
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `${store.replace(/ /g,'_')}_${date}.json`;
+  a.download = `${operator}_${store.replace(/ /g,'_')}_${date}.json`;
   a.click();
 }
+// ── REVIEW SEARCH ──
+function filterReview(q) {
+  const rows = document.querySelectorAll('#rList .rev-t-row');
+  const term = q.trim().toLowerCase();
+  rows.forEach(row => {
+    const itemNum = row.querySelector('.rc-num')?.textContent?.toLowerCase() || '';
+    row.style.display = (!term || itemNum.includes(term)) ? '' : 'none';
+  });
+}
+
+// ── PAST ORDER SEARCH ──
+function filterPast(q) {
+  const rows = document.querySelectorAll('#pList .t-row');
+  const term = q.trim().toLowerCase();
+  rows.forEach(row => {
+    const itemNum = row.querySelector('.t-item')?.textContent?.toLowerCase() || '';
+    row.style.display = (!term || itemNum.includes(term)) ? '' : 'none';
+  });
+}
+
+// ── PAST ORDER EMAIL ──
+function sendPastEmail() {
+  if (!pastOrder) return;
+  const subject = `Pet Valu Order — ${pastOrder.operator||''} — ${pastOrder.store} — ${pastOrder.isoDate}`.trim().replace('—  —','—');
+  const body = JSON.stringify({store:pastOrder.store, date:pastOrder.isoDate, items:pastOrder.items.map(i=>({item:i.itemNum,order:(i.cases&&i.order>0)?-i.order:i.order,qoh:i.qoh}))}, null, 2);
+  if (navigator.share) {
+    navigator.share({ title: subject, text: body }).catch(()=>{});
+  } else {
+    window.location.href = `mailto:sarniapetvalu@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }
+}
+
+// ── PAST ORDER JSON ──
+function dlPastJSON() {
+  if (!pastOrder) return;
+  const data = {store:pastOrder.store, date:pastOrder.isoDate, items:pastOrder.items.map(i=>({item:i.itemNum,order:(i.cases&&i.order>0)?-i.order:i.order,qoh:i.qoh}))};
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${pastOrder.operator||''}${pastOrder.operator?'_':''}${pastOrder.store.replace(/ /g,'_')}_${pastOrder.isoDate}.json`;
+  a.click();
+}
+
 // ── FINALISE ──
 function finalise() {
   archiveOrder(); clearDraft();
@@ -802,7 +875,7 @@ function dlCSV() {
   const date=new Date().toLocaleDateString('en-CA');
   let csv='Store,Date,Item #,Order Qty,Cases,On Hand\n';
   items.filter(i=>i.itemNum).forEach(i=>{const absOrd=Math.abs(i.order);const caseLbl=i.cases?(absOrd===1?'case':'cases'):'';csv+=`"${store}","${date}","${i.itemNum}",${absOrd},"${caseLbl}",${i.qoh}\n`;});
-  doDownload(csv,`${store.replace(/ /g,'_')}_${date}.csv`);
+  doDownload(csv,`${operator}_${store.replace(/ /g,'_')}_${date}.csv`);
   showToast('Spreadsheet saved');
 }
 
