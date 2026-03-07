@@ -242,7 +242,7 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
 
 <!-- ══ STORE SELECT ══ -->
 <div id="s-store" class="screen active">
-  <div class="brand-line">Pet Valu <span style="color:var(--accent);font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace;vertical-align:middle;margin-left:6px">v1.5</span></div>
+  <div class="brand-line">Pet Valu <span style="color:var(--accent);font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace;vertical-align:middle;margin-left:6px">v1.6</span></div>
   <div class="store-heading">Which store<br>today?</div>
   <div class="store-list">
     <button class="store-btn" onclick="selectStore('Lakeshore Rd')"><span class="store-btn-name">Lakeshore Rd</span><span class="store-btn-arr">›</span></button>
@@ -373,6 +373,7 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
   <div class="rev-actions">
     <button class="btn-primary" onclick="finalise()">Save &amp; Copy for Computer</button>
     <button class="btn-secondary" onclick="sendEmail()">Send via Email</button>
+    <button class="btn-secondary" onclick="dlJSON()">Download JSON</button>
     <button class="btn-secondary" onclick="dlCSV()">Save as Spreadsheet</button>
     <button class="btn-ghost" onclick="goTo('s-entry')">Continue Adding Items</button>
   </div>
@@ -772,11 +773,24 @@ function dlPastCSV() {
 // ── EMAIL ──
 function sendEmail() {
   const ord     = items.filter(i => i.itemNum);
-  const subject = encodeURIComponent(`Pet Valu Order — ${store} — ${new Date().toLocaleDateString('en-CA')}`);
+  const subject = `Pet Valu Order — ${store} — ${new Date().toLocaleDateString('en-CA')}`;
   const body    = JSON.stringify({store, date: new Date().toLocaleDateString('en-CA'), items: ord.map(i => ({item: i.itemNum, order: i.cases ? -i.order : i.order, qoh: i.qoh}))}, null, 2);
-  window.location.href = `mailto:sarniapetvalu@gmail.com?subject=${subject}&body=${encodeURIComponent(body)}`;
+  if (navigator.share) {
+    navigator.share({ title: subject, text: body }).catch(() => {});
+  } else {
+    window.location.href = `mailto:sarniapetvalu@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }
 }
 
+function dlJSON() {
+  const date = new Date().toLocaleDateString('en-CA');
+  const data = {store, date, items: items.filter(i=>i.itemNum).map(i=>({item:i.itemNum,order:i.cases?-i.order:i.order,qoh:i.qoh}))};
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${store.replace(/ /g,'_')}_${date}.json`;
+  a.click();
+}
 // ── FINALISE ──
 function finalise() {
   archiveOrder(); clearDraft();
