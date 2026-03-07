@@ -769,14 +769,14 @@ function dlPastCSV() {
 function sendEmail() {
   const ord     = items.filter(i => i.order > 0);
   const subject = encodeURIComponent(`Pet Valu Order — ${store} — ${new Date().toLocaleDateString('en-CA')}`);
-  const body    = JSON.stringify({store, date: new Date().toLocaleDateString('en-CA'), items: ord.map(i => ({item: i.itemNum, order: i.order, qoh: i.qoh, ...(i.cases ? {cases: true} : {})}))}, null, 2);
+  const body    = JSON.stringify({store, date: new Date().toLocaleDateString('en-CA'), items: ord.map(i => ({item: i.itemNum, order: i.cases ? -i.order : i.order, qoh: i.qoh}))}, null, 2);
   window.location.href = `mailto:sarniapetvalu@gmail.com?subject=${subject}&body=${encodeURIComponent(body)}`;
 }
 
 // ── FINALISE ──
 function finalise() {
   archiveOrder(); clearDraft();
-  const p={store,date:new Date().toLocaleDateString('en-CA'),items:items.filter(i=>i.order>0).map(i=>({item:i.itemNum,order:i.order,qoh:i.qoh,...(i.cases?{cases:true}:{})}))};
+  const p={store,date:new Date().toLocaleDateString('en-CA'),items:items.filter(i=>i.order>0).map(i=>({item:i.itemNum,order:i.cases?-i.order:i.order,qoh:i.qoh}))};
   copyTxt(JSON.stringify(p,null,2),'Order saved and copied');
   items=[]; nextId=1; goTo('s-store');
 }
