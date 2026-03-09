@@ -210,17 +210,24 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
 .hist-scroll { flex: 1; overflow-y: auto; padding: 14px 20px; }
 .h-group { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin: 16px 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
 .h-group:first-child { margin-top: 0; }
-.h-card { background: var(--s1); border: 1px solid var(--border); border-radius: 13px; padding: 13px 15px; margin-bottom: 8px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
-.h-card:active { background: var(--s2); border-color: var(--border2); }
-.hc-date { font-size: 14px; font-weight: 700; color: var(--text); }
-.hc-meta { font-size: 12px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+.h-card { background: var(--s1); border: 1px solid var(--border); border-radius: 13px; padding: 14px 16px; margin-bottom: 8px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: border-color 0.15s, background 0.15s; }
+.h-card:active { background: var(--s2); border-color: var(--accent); }
+.hc-date { font-size: 15px; font-weight: 700; color: var(--text); }
+.hc-op   { font-size: 12px; font-weight: 600; color: var(--accent); margin-top: 3px; }
+.hc-meta { font-size: 12px; font-weight: 500; color: var(--text2); margin-top: 3px; }
 .hc-right { display: flex; align-items: center; gap: 10px; }
-.hc-cnt  { font-size: 12px; font-weight: 700; color: var(--accent); font-family: 'JetBrains Mono', monospace; }
-.hc-arr  { color: var(--muted); font-size: 16px; font-weight: 700; }
+.hc-cnt  { font-size: 12px; font-weight: 700; color: var(--text2); font-family: 'JetBrains Mono', monospace; background: var(--s3); border-radius: 20px; padding: 2px 9px; }
+.hc-arr  { color: var(--accent); font-size: 18px; font-weight: 700; }
 .hc-del  { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; padding: 5px 7px; border-radius: 7px; font-family: 'Figtree', sans-serif; }
 .hc-del:active { background: var(--redd); color: var(--red); }
-.empty { text-align: center; padding: 52px 0; color: var(--muted); }
+.empty { text-align: center; padding: 52px 0; color: var(--text2); }
 .empty p { font-size: 14px; font-weight: 600; line-height: 1.5; margin-top: 10px; }
+@keyframes rowHighlight {
+  0%   { background: rgba(0,200,150,0.25); border-left: 3px solid var(--accent); }
+  70%  { background: rgba(0,200,150,0.1);  border-left: 3px solid var(--accent); }
+  100% { background: transparent; border-left: 3px solid transparent; }
+}
+.t-row-highlight { animation: rowHighlight 2s ease-out forwards; }
 
 /* ── PAST ORDER ── */
 .scroll-area { flex: 1; overflow-y: auto; padding: 0 20px; }
@@ -376,7 +383,7 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
       <div class="ic-badge" id="rBadge"></div>
     </div>
     <div style="padding:0 4px 8px">
-      <input id="rSearch" type="text" placeholder="Search items..." oninput="filterReview(this.value)"
+      <input id="rSearch" type="text" placeholder="Search item # to locate in order..." oninput="filterReview(this.value)"
         style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-family:'Figtree',sans-serif;font-size:15px;outline:none">
     </div>
     <div class="rev-hint">Tap any cell to edit</div>
@@ -495,7 +502,7 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
       <div><div class="ic-store" id="pStore"></div><div class="ic-meta" id="pMeta"></div></div>
     </div>
     <div style="padding:0 4px 8px">
-      <input id="pSearch" type="text" placeholder="Search items..." oninput="filterPast(this.value)"
+      <input id="pSearch" type="text" placeholder="Search item # to locate in order..." oninput="filterPast(this.value)"
         style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-family:'Figtree',sans-serif;font-size:15px;outline:none">
     </div>
     <div class="t-head"><div>Item #</div><div>Order</div><div>On Hand</div></div>
@@ -945,6 +952,11 @@ function saveOverlayEdit() {
 }
 
 // ── HISTORY ──
+function fmtDate(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr + 'T12:00:00');
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
 let _localStoreFilter = null;
 let _cloudStoreFilter = null;
 let _storeFilterContext = null;
@@ -966,9 +978,14 @@ function renderHistLocal() {
   sc.innerHTML = Object.keys(g).map(s =>
     `<div class="h-group">${s}</div>` +
     g[s].map(o => `<div class="h-card" data-local-id="${o.id}">
-      <div><div class="hc-date">${o.date}</div><div class="hc-meta">${o.items.length} items ordered</div></div>
-      <div class="hc-right"><span class="hc-cnt">${o.items.length}</span><span class="hc-arr">›</span>
-      <button class="hc-del" data-del-id="${o.id}">✕</button></div>
+      <div>
+        <div class="hc-date">${fmtDate(o.date)}</div>
+        <div class="hc-meta">${o.items.length} items</div>
+      </div>
+      <div class="hc-right">
+        <button class="hc-del" data-del-id="${o.id}">✕</button>
+        <span class="hc-arr">›</span>
+      </div>
     </div>`).join('')
   ).join('');
   // Event delegation for local history cards
@@ -1017,7 +1034,10 @@ function renderCloudList() {
   sc.innerHTML = Object.keys(g).map(s =>
     `<div class="h-group">${s}</div>` +
     g[s].map(o => `<div class="h-card" data-cloud-id="${o.id}" data-cloud-name="${o.name}">
-      <div><div class="hc-date">${o.date}</div><div class="hc-meta">${o.operator}</div></div>
+      <div>
+        <div class="hc-date">${fmtDate(o.date)}</div>
+        <div class="hc-op">${o.operator}</div>
+      </div>
       <div class="hc-right"><span class="hc-arr">›</span></div>
     </div>`).join('')
   ).join('');
@@ -1035,7 +1055,7 @@ function viewPastLocal(id) {
   pastOrder = loadHist().find(o => o.id===id); if(!pastOrder) return;
   document.getElementById('pTitle').textContent = pastOrder.store;
   document.getElementById('pStore').textContent = pastOrder.store;
-  document.getElementById('pMeta').textContent = pastOrder.date + ' · ' + pastOrder.items.length + ' items';
+  document.getElementById('pMeta').textContent = fmtDate(pastOrder.date) + ' · ' + pastOrder.items.length + ' items';
   renderPastList(pastOrder.items);
   document.getElementById('exportDriveBtn').style.display = 'flex';
   goTo('s-past');
@@ -1056,7 +1076,7 @@ async function viewPastCloud(fileId, filename) {
     pastOrder = { store, date, isoDate: date, items: data.content.items.map(i => ({ itemNum: i.item, order: Math.abs(i.order), cases: i.order < 0, qoh: i.qoh })) };
     document.getElementById('pTitle').textContent = store;
     document.getElementById('pStore').textContent = store;
-    document.getElementById('pMeta').textContent = date + ' · ' + pastOrder.items.length + ' items';
+    document.getElementById('pMeta').textContent = fmtDate(date) + ' · ' + pastOrder.items.length + ' items';
     renderPastList(pastOrder.items);
     document.getElementById('exportDriveBtn').style.display = 'none';
     goTo('s-past');
@@ -1066,11 +1086,11 @@ async function viewPastCloud(fileId, filename) {
 }
 
 function renderPastList(items) {
-  document.getElementById('pList').innerHTML = items.map(i => {
+  document.getElementById('pList').innerHTML = items.map((i, idx) => {
     const isCases = i.order < 0 || i.cases;
     const absOrder = Math.abs(i.order);
     const orderDisplay = isCases ? absOrder + '<span style="color:var(--accent);font-size:10px;font-weight:700;display:block;line-height:1.2">' + (absOrder===1?'case':'cases') + '</span>' : absOrder;
-    return `<div class="t-row"><div class="t-item">${i.itemNum}</div><div class="t-order">${orderDisplay}</div><div class="t-qoh">${i.qoh}</div></div>`;
+    return `<div class="t-row" data-past-idx="${idx}"><div class="t-item">${i.itemNum}</div><div class="t-order">${orderDisplay}</div><div class="t-qoh">${i.qoh}</div></div>`;
   }).join('');
 }
 function viewPast(id) { viewPastLocal(id); } // legacy alias
@@ -1163,12 +1183,40 @@ function filterReview(q) {
 
 // ── PAST ORDER SEARCH ──
 function filterPast(q) {
-  const rows = document.querySelectorAll('#pList .t-row');
   const term = q.trim().toLowerCase();
+  const rows = document.querySelectorAll('#pList .t-row');
+  if (!term) {
+    // Restore full list
+    rows.forEach(row => { row.style.display = ''; row.style.cursor = ''; row.onclick = null; });
+    return;
+  }
+  // Hide non-matching, make matching rows tappable jump targets
   rows.forEach(row => {
     const itemNum = row.querySelector('.t-item')?.textContent?.toLowerCase() || '';
-    row.style.display = (!term || itemNum.includes(term)) ? '' : 'none';
+    if (itemNum.includes(term)) {
+      row.style.display = '';
+      row.style.cursor = 'pointer';
+      row.onclick = () => jumpToPastRow(row.dataset.pastIdx);
+    } else {
+      row.style.display = 'none';
+      row.onclick = null;
+    }
   });
+}
+
+function jumpToPastRow(idx) {
+  // Clear search
+  const searchEl = document.getElementById('pSearch');
+  if (searchEl) { searchEl.value = ''; filterPast(''); }
+  // Scroll to row and highlight
+  setTimeout(() => {
+    const target = document.querySelector(`#pList [data-past-idx="${idx}"]`);
+    if (!target) return;
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Remove any existing highlight first
+    document.querySelectorAll('.t-row-highlight').forEach(r => r.classList.remove('t-row-highlight'));
+    setTimeout(() => target.classList.add('t-row-highlight'), 150);
+  }, 50);
 }
 
 // ── PAST ORDER EMAIL ──
