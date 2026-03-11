@@ -71,9 +71,9 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
 
 /* ── ENTRY ITEMS LIST ── */
 .items-area { flex: 1; overflow-y: auto; padding: 8px 16px 4px; }
-.items-list-hdr { display: grid; grid-template-columns: 1fr 60px 60px 36px; padding: 6px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin-bottom: 2px; gap: 6px; }
+.items-list-hdr { display: grid; grid-template-columns: 1fr 60px 60px 26px 36px; padding: 6px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin-bottom: 2px; gap: 6px; }
 .items-list-hdr div:nth-child(2), .items-list-hdr div:nth-child(3) { text-align: center; }
-.item-row { display: grid; grid-template-columns: 1fr 60px 60px 36px; align-items: center; gap: 6px; padding: 2px 0; }
+.item-row { display: grid; grid-template-columns: 1fr 60px 60px 26px 36px; align-items: center; gap: 6px; padding: 2px 0; }
 .item-cell { padding: 9px 10px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; min-height: 38px; display: flex; align-items: center; transition: background 0.1s; }
 .item-cell:active { background: var(--s3); }
 .item-cell.editing { background: var(--s2); border-color: var(--accent); box-shadow: 0 0 0 2px var(--accentd); }
@@ -85,6 +85,92 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
 .del-btn:active { background: var(--redd); color: var(--red); }
 .del-btn svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; }
 .no-items-msg { text-align: center; padding: 32px 20px; color: var(--muted); font-size: 13px; font-weight: 500; }
+
+/* ── INFO BUTTON ── */
+.info-btn {
+  width: 26px; height: 26px; border-radius: 50%; border: none;
+  background: none; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; flex-shrink: 0; transition: opacity 0.12s;
+  font-size: 14px; line-height: 1; padding: 0;
+}
+.info-btn:active { opacity: 0.6; }
+.info-btn.has-info { color: var(--accent); }
+.info-btn.no-info  { color: var(--muted); opacity: 0.45; pointer-events: none; }
+
+/* ── CATALOG POPUP ── */
+#catalogPopup {
+  position: fixed; inset: 0; z-index: 800;
+  display: none; align-items: center; justify-content: center;
+  padding: 24px;
+  background: rgba(6,9,16,0.65);
+  backdrop-filter: blur(6px);
+}
+#catalogPopup.show { display: flex; }
+.cat-card {
+  background: var(--s1); border: 1px solid var(--border2);
+  border-radius: 20px; padding: 0; width: 100%; max-width: 320px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.7);
+  animation: catPop 0.22s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+@keyframes catPop {
+  from { opacity:0; transform: scale(0.92) translateY(8px); }
+  to   { opacity:1; transform: scale(1) translateY(0); }
+}
+.cat-header {
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+}
+.cat-item-num {
+  font-family: 'JetBrains Mono', monospace; font-size: 13px;
+  font-weight: 700; color: var(--accent); letter-spacing: 0.5px;
+  margin-bottom: 3px;
+}
+.cat-desc {
+  font-family: 'Figtree', sans-serif; font-size: 15px;
+  font-weight: 700; color: var(--text); line-height: 1.25;
+}
+.cat-close {
+  width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border);
+  background: var(--s2); cursor: pointer; display: flex; align-items: center;
+  justify-content: center; flex-shrink: 0; color: var(--text2); font-size: 13px;
+}
+.cat-close:active { background: var(--s3); }
+.cat-body { padding: 12px 18px 18px; display: flex; flex-direction: column; gap: 10px; }
+.cat-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cat-row-label { font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1.5px; color: var(--muted); }
+.cat-row-val { font-size: 14px; font-weight: 600; color: var(--text2);
+  text-align: right; font-family: 'Figtree', sans-serif; }
+.cat-row-val.mono { font-family: 'JetBrains Mono', monospace; color: var(--accent); }
+
+/* ── CATALOG BROWSE SCREEN ── */
+#s-catalog { background: var(--bg); }
+.cat-search-wrap { padding: 14px 18px; flex-shrink: 0; }
+.cat-search-input {
+  width: 100%; background: var(--s2); border: 1px solid var(--border);
+  border-radius: 14px; padding: 14px 18px;
+  font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700;
+  color: var(--text); outline: none; letter-spacing: 1px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.cat-search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accentd); }
+.cat-search-input::placeholder { color: var(--muted); font-size: 16px; font-weight: 500; letter-spacing: 0; }
+.cat-result { margin: 0 18px; background: var(--s1); border: 1px solid var(--border);
+  border-radius: 16px; overflow: hidden; }
+.cat-result-header { padding: 16px 18px 14px; border-bottom: 1px solid var(--border); }
+.cat-result-num { font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+.cat-result-desc { font-size: 17px; font-weight: 800; color: var(--text);
+  font-family: 'Syne', sans-serif; line-height: 1.2; }
+.cat-result-rows { padding: 10px 18px 14px; display: flex; flex-direction: column; gap: 12px; }
+.cat-result-row { display: flex; justify-content: space-between; align-items: center; }
+.cat-result-label { font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1.5px; color: var(--muted); }
+.cat-result-val { font-size: 15px; font-weight: 600; color: var(--text2); }
+.cat-result-val.accent { color: var(--accent); font-family: 'JetBrains Mono', monospace; }
+.cat-empty { padding: 52px 20px; text-align: center; color: var(--muted);
+  font-size: 14px; font-weight: 500; }
 
 /* ── ENTRY DISPLAY (step + value) ── */
 #entry-display { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 28px; }
@@ -160,9 +246,9 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
 .rev-hint { font-size: 11px; font-weight: 600; color: var(--muted); text-align: center; margin-bottom: 10px; letter-spacing: 0.3px; }
 
 /* Review table with editable cells */
-.rev-t-head { display: grid; grid-template-columns: 1fr 72px 72px 36px; padding: 8px 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); border-bottom: 1px solid var(--border); margin-bottom: 2px; gap: 4px; }
+.rev-t-head { display: grid; grid-template-columns: 1fr 72px 72px 26px 36px; padding: 8px 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); border-bottom: 1px solid var(--border); margin-bottom: 2px; gap: 4px; }
 .rev-t-head div:nth-child(2), .rev-t-head div:nth-child(3) { text-align: center; }
-.rev-t-row { display: grid; grid-template-columns: 1fr 72px 72px 36px; align-items: center; gap: 4px; padding: 3px 0; border-bottom: 1px solid var(--border); }
+.rev-t-row { display: grid; grid-template-columns: 1fr 72px 72px 26px 36px; align-items: center; gap: 4px; padding: 3px 0; border-bottom: 1px solid var(--border); }
 .rev-t-row:last-child { border-bottom: none; }
 .rev-cell { padding: 10px 8px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; min-height: 40px; display: flex; align-items: center; transition: background 0.1s; }
 .rev-cell:active { background: var(--s3); }
@@ -231,9 +317,9 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
 
 /* ── PAST ORDER ── */
 .scroll-area { flex: 1; overflow-y: auto; padding: 0 20px; }
-.t-head { display: grid; grid-template-columns: 1fr 64px 64px; padding: 8px 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); border-bottom: 1px solid var(--border); margin-bottom: 2px; }
+.t-head { display: grid; grid-template-columns: 1fr 64px 64px 26px; padding: 8px 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); border-bottom: 1px solid var(--border); margin-bottom: 2px; }
 .t-head div:nth-child(2), .t-head div:nth-child(3) { text-align: center; }
-.t-row { display: grid; grid-template-columns: 1fr 64px 64px; padding: 12px 6px; border-bottom: 1px solid var(--border); align-items: center; }
+.t-row { display: grid; grid-template-columns: 1fr 64px 64px 26px; padding: 12px 6px; border-bottom: 1px solid var(--border); align-items: center; }
 .t-row:last-child { border-bottom: none; }
 .t-item  { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 500; color: var(--text); }
 .t-order { text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 700; color: var(--accent); }
@@ -322,7 +408,7 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
     <div class="su-step" id="suStep3">
       <div class="su-icon" id="suIcon3">⋯</div>
       <div>
-        <div class="su-label">Loading</div>
+        <div class="su-label">Loading catalog</div>
         <div class="su-sub" id="suSub3">Preparing...</div>
       </div>
     </div>
@@ -330,12 +416,14 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
 </div>
 
 <div id="s-operator" class="screen active" style="justify-content:center;padding:0 28px">
-  <div class="brand-line">Project: Herald <span id="appVersionBadge" style="color:var(--accent);font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace;vertical-align:middle;margin-left:6px">v2.4</span></div>
+  <div class="brand-line">Project: Herald <span id="appVersionBadge" style="color:var(--accent);font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace;vertical-align:middle;margin-left:6px">v2.5</span></div>
   <div class="store-heading">Who is doing<br>the order?</div>
   <div class="store-list">
     <button class="store-btn" onclick="selectOperator('Nipun')"><span class="store-btn-name">Nipun</span><span class="store-btn-arr">›</span></button>
     <button class="store-btn" onclick="selectOperator('Shruti')"><span class="store-btn-name">Shruti</span><span class="store-btn-arr">›</span></button>
   </div>
+  <button class="hist-link" onclick="goTo('s-history'); renderHist()" style="margin-bottom:8px">Past Orders</button>
+  <button class="hist-link" onclick="goTo('s-catalog');document.getElementById('catSearchInput').value='';renderCatalogResult('');">Browse Catalog</button>
   <div style="position:absolute;bottom:28px;left:0;right:0;text-align:center;font-size:11px;color:var(--muted);letter-spacing:0.5px;font-family:'Figtree',sans-serif">made by <span style="color:var(--text2);font-weight:600">Ketan Vashisht</span></div>
 </div>
 
@@ -367,7 +455,7 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
 
   <!-- Items always visible -->
   <div class="items-area" id="itemsArea">
-    <div class="items-list-hdr"><div>Item #</div><div>Order</div><div>On Hand</div><div></div></div>
+    <div class="items-list-hdr"><div>Item #</div><div>Order</div><div>On Hand</div><div></div><div></div></div>
     <div id="items-inner"></div>
   </div>
 
@@ -468,7 +556,7 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
         style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-family:'Figtree',sans-serif;font-size:15px;outline:none">
     </div>
     <div class="rev-hint">Tap any cell to edit</div>
-    <div class="rev-t-head"><div>Item #</div><div>Order</div><div>On Hand</div><div></div></div>
+    <div class="rev-t-head"><div>Item #</div><div>Order</div><div>On Hand</div><div></div><div></div></div>
     <div id="rList"></div>
   </div>
 
@@ -586,7 +674,7 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
       <input id="pSearch" type="text" placeholder="Search item # to locate in order..." oninput="filterPast(this.value)"
         style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-family:'Figtree',sans-serif;font-size:15px;outline:none">
     </div>
-    <div class="t-head"><div>Item #</div><div>Order</div><div>On Hand</div></div>
+    <div class="t-head"><div>Item #</div><div>Order</div><div>On Hand</div><div></div></div>
     <div id="pList"></div>
   </div>
   <div style="padding:10px 18px 12px;flex-shrink:0">
@@ -705,11 +793,77 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
   </div>
 </div>
 
+<!-- ══ CATALOG INFO POPUP ══ -->
+<div id="catalogPopup" onclick="if(event.target===this)closeCatalogPopup()">
+  <div class="cat-card">
+    <div class="cat-header">
+      <div>
+        <div class="cat-item-num" id="catPopItemNum"></div>
+        <div class="cat-desc" id="catPopDesc"></div>
+      </div>
+      <button class="cat-close" onclick="closeCatalogPopup()">✕</button>
+    </div>
+    <div class="cat-body">
+      <div class="cat-row">
+        <span class="cat-row-label">Brand</span>
+        <span class="cat-row-val" id="catPopBrand"></span>
+      </div>
+      <div class="cat-row">
+        <span class="cat-row-label">Order Multiple</span>
+        <span class="cat-row-val mono" id="catPopMultiple"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ BROWSE CATALOG ══ -->
+<div id="s-catalog" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="goTo('s-operator')">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      Back
+    </button>
+    <div class="topbar-center" style="text-align:center">
+      <div class="topbar-title">Browse Catalog</div>
+    </div>
+    <div style="width:10px"></div>
+  </div>
+  <div class="cat-search-wrap">
+    <input id="catSearchInput" class="cat-search-input" type="text" inputmode="numeric"
+      placeholder="Enter item number..."
+      oninput="renderCatalogResult(this.value.trim())">
+  </div>
+  <div id="catResultArea">
+    <div class="cat-empty" style="margin-top:20px">
+      <div style="font-size:32px;margin-bottom:10px;opacity:0.2">🔍</div>
+      <div>Type an item number above</div>
+    </div>
+  </div>
+</div>
+
 <script>
 const FIELDS  = ['item','order','qoh'];
 const LABELS  = { item:'Item Number', order:'Order Qty', qoh:'On Hand' };
 const PROMPTS = { item:'enter item #', order:'enter qty', qoh:'on hand' };
 const HK = 'pv_hist_v4', DP = 'pv_draft_v4_';
+
+// ── CATALOG ──
+let catalog = {};
+const CATALOG_URL = 'https://kv-10.github.io/petvalu-order/catalog.json';
+async function loadCatalog() {
+  try {
+    const res = await fetch(CATALOG_URL + '?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    catalog = await res.json();
+  } catch(e) { catalog = {}; }
+}
+function catInfo(itemNum) { return catalog[String(itemNum)] || null; }
+function infoBtnHtml(itemNum, extraStyle) {
+  const info = catInfo(itemNum);
+  const cls  = info ? 'has-info' : 'no-info';
+  const tip  = info ? `onclick="showCatalogPopup('${itemNum}');event.stopPropagation()"` : '';
+  return `<button class="info-btn ${cls}" ${tip} ${extraStyle||''}>ⓘ</button>`;
+}
 
 let operator = '', store = '', items = [], curField = 'item', curValue = '', curRow = {item:'',order:'',qoh:''};
 let pastOrder = null, nextId = 1;
@@ -928,6 +1082,7 @@ function renderEntryItems() {
       <div class="item-cell ic-num${ef}"  onclick="startEdit(${idx},'item')">${it.itemNum}</div>
       <div class="item-cell ic-qty${eo}" onclick="startEdit(${idx},'order')">${it.order}${it.cases ? '<span style="color:var(--accent);font-size:9px;font-weight:700;display:block;line-height:1.1">' + (it.order===1?'case':'cases') + '</span>' : ''}</div>
       <div class="item-cell ic-qoh${eq}"  onclick="startEdit(${idx},'qoh')">${it.qoh}</div>
+      ${infoBtnHtml(it.itemNum)}
       <button class="del-btn" onclick="deleteEntryItem(${idx})">
         <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -960,6 +1115,7 @@ function renderReviewList() {
       <div class="rev-cell rc-num"   onclick="openOverlay(${idx},'item')">${it.itemNum}</div>
       <div class="rev-cell rc-order" onclick="openOverlay(${idx},'order')">${it.cases ? it.order + '<span style="color:var(--accent);font-size:10px;font-weight:700;display:block;line-height:1.2">' + (it.order === 1 ? 'case' : 'cases') + '</span>' : it.order}</div>
       <div class="rev-cell rc-qoh"   onclick="openOverlay(${idx},'qoh')">${it.qoh}</div>
+      ${infoBtnHtml(it.itemNum)}
       <button class="rc-del" onclick="deleteReviewItem(${idx})">
         <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -1171,7 +1327,7 @@ function renderPastList(items) {
     const isCases = i.order < 0 || i.cases;
     const absOrder = Math.abs(i.order);
     const orderDisplay = isCases ? absOrder + '<span style="color:var(--accent);font-size:10px;font-weight:700;display:block;line-height:1.2">' + (absOrder===1?'case':'cases') + '</span>' : absOrder;
-    return `<div class="t-row" data-past-idx="${idx}"><div class="t-item">${i.itemNum}</div><div class="t-order">${orderDisplay}</div><div class="t-qoh">${i.qoh}</div></div>`;
+    return `<div class="t-row" data-past-idx="${idx}"><div class="t-item">${i.itemNum}</div><div class="t-order">${orderDisplay}</div><div class="t-qoh">${i.qoh}</div>${infoBtnHtml(i.itemNum, 'style="justify-self:center"')}</div>`;
   }).join('');
 }
 function viewPast(id) { viewPastLocal(id); } // legacy alias
@@ -1376,6 +1532,55 @@ function confirmSaveAndClear() {
   showToast('Order cleared');
 }
 
+// ── CATALOG POPUP ──
+function showCatalogPopup(itemNum) {
+  const info = catInfo(itemNum);
+  if (!info) return;
+  document.getElementById('catPopItemNum').textContent = '#' + itemNum;
+  document.getElementById('catPopDesc').textContent    = info.desc;
+  document.getElementById('catPopBrand').textContent   = info.brand;
+  document.getElementById('catPopMultiple').textContent = '×' + info.multiple;
+  const el = document.getElementById('catalogPopup');
+  el.style.display = 'flex';
+  // Re-trigger animation
+  const card = el.querySelector('.cat-card');
+  card.style.animation = 'none';
+  card.offsetHeight; // reflow
+  card.style.animation = '';
+}
+function closeCatalogPopup() {
+  document.getElementById('catalogPopup').style.display = 'none';
+}
+
+// ── BROWSE CATALOG ──
+function renderCatalogResult(q) {
+  const area = document.getElementById('catResultArea');
+  if (!q) {
+    area.innerHTML = '<div class="cat-empty" style="margin-top:20px"><div style="font-size:32px;margin-bottom:10px;opacity:0.2">🔍</div><div>Type an item number above</div></div>';
+    return;
+  }
+  const info = catInfo(q);
+  if (!info) {
+    area.innerHTML = `<div class="cat-empty" style="margin-top:20px"><div style="font-size:28px;margin-bottom:10px;opacity:0.2">—</div><div>Item <span style="font-family:'JetBrains Mono',monospace;color:var(--text2)">${q}</span> not found</div></div>`;
+    return;
+  }
+  area.innerHTML = `<div class="cat-result">
+    <div class="cat-result-header">
+      <div class="cat-result-num">#${q}</div>
+      <div class="cat-result-desc">${info.desc}</div>
+    </div>
+    <div class="cat-result-rows">
+      <div class="cat-result-row">
+        <span class="cat-result-label">Brand</span>
+        <span class="cat-result-val">${info.brand}</span>
+      </div>
+      <div class="cat-result-row">
+        <span class="cat-result-label">Order Multiple</span>
+        <span class="cat-result-val accent">×${info.multiple}</span>
+      </div>
+    </div>
+  </div>`;
+}
 // ── UTILS ──
 function copyTxt(text,msg) {
   (navigator.clipboard?navigator.clipboard.writeText(text):Promise.reject())
@@ -1406,7 +1611,7 @@ function setOverlayCasesMode(val) {
 refreshDisp(); refreshNext(); refreshReview();
 
 // ── STARTUP SEQUENCE ──
-const APP_VERSION = 'v2.4';
+const APP_VERSION = 'v2.5';
 const VERSION_URL = 'https://kv-10.github.io/petvalu-order/version.json';
 
 function suIcon(id, cls, content) {
@@ -1482,10 +1687,11 @@ async function runStartup() {
   suShow(3);
   await sleep(200);
   suIcon(3, 'spin', '');
-  suSub(3, 'Preparing...');
-  await sleep(800);
+  suSub(3, 'Loading catalog...');
+  await loadCatalog();
+  const catSize = Object.keys(catalog).length;
   suIcon(3, 'ok', '✓');
-  suSub(3, 'Ready');
+  suSub(3, catSize > 0 ? catSize.toLocaleString() + ' items loaded' : 'Ready');
   await sleep(700);
   suHide();
 }
