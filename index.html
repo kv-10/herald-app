@@ -415,16 +415,28 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
   </div>
 </div>
 
-<div id="s-operator" class="screen active" style="justify-content:center;padding:0 28px">
-  <div class="brand-line">Project: Herald <span id="appVersionBadge" style="color:var(--accent);font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace;vertical-align:middle;margin-left:6px">v2.5</span></div>
-  <div class="store-heading">Who is doing<br>the order?</div>
-  <div class="store-list">
-    <button class="store-btn" onclick="selectOperator('Nipun')"><span class="store-btn-name">Nipun</span><span class="store-btn-arr">›</span></button>
-    <button class="store-btn" onclick="selectOperator('Shruti')"><span class="store-btn-name">Shruti</span><span class="store-btn-arr">›</span></button>
+<div id="s-operator" class="screen active" style="justify-content:space-between;padding:0 28px 36px;">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+    <div class="brand-line">Project: Herald <span id="appVersionBadge" style="color:var(--accent);font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace;vertical-align:middle;margin-left:6px">v2.5</span></div>
+    <div class="store-heading">Who is doing<br>the order?</div>
+    <div class="store-list">
+      <button class="store-btn" onclick="selectOperator('Nipun')"><span class="store-btn-name">Nipun</span><span class="store-btn-arr">›</span></button>
+      <button class="store-btn" onclick="selectOperator('Shruti')"><span class="store-btn-name">Shruti</span><span class="store-btn-arr">›</span></button>
+    </div>
   </div>
-  <button class="hist-link" onclick="goTo('s-history'); renderHist()" style="margin-bottom:8px">Past Orders</button>
-  <button class="hist-link" onclick="goTo('s-catalog');document.getElementById('catSearchInput').value='';renderCatalogResult('');">Browse Catalog</button>
-  <div style="position:absolute;bottom:28px;left:0;right:0;text-align:center;font-size:11px;color:var(--muted);letter-spacing:0.5px;font-family:'Figtree',sans-serif">made by <span style="color:var(--text2);font-weight:600">Ketan Vashisht</span></div>
+  <div style="display:flex;flex-direction:column;gap:8px;width:100%">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button class="hist-link" onclick="goTo('s-history'); renderHist()" style="display:flex;align-items:center;justify-content:center;gap:7px;padding:14px 12px">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Past Orders
+      </button>
+      <button class="hist-link" onclick="goTo('s-catalog');document.getElementById('catSearchInput').value='';renderCatalogResult('');" style="display:flex;align-items:center;justify-content:center;gap:7px;padding:14px 12px">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Browse Catalog
+      </button>
+    </div>
+    <div style="text-align:center;font-size:11px;color:var(--muted);letter-spacing:0.5px;font-family:'Figtree',sans-serif;padding-top:4px">made by <span style="color:var(--text2);font-weight:600">Ketan Vashisht</span></div>
+  </div>
 </div>
 
 <div id="s-store" class="screen">
@@ -436,7 +448,6 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
   </div>
   <div class="store-heading">Which store<br>today?</div>
   <div class="store-list" id="storeList"></div>
-  <button class="hist-link" onclick="goTo('s-history'); renderHist()">Past Orders</button>
 </div>
 
 <!-- ══ ENTRY ══ -->
@@ -577,7 +588,7 @@ body { font-family: 'Figtree', sans-serif; color: var(--text); height: 100dvh; d
 <!-- ══ HISTORY BRANCH ══ -->
 <div id="s-history" class="screen" style="justify-content:center;padding:0 28px">
   <div class="topbar" style="position:absolute;top:0;left:0;right:0">
-    <button class="back-btn" onclick="goTo('s-store')">
+    <button class="back-btn" onclick="goTo('s-operator')">
       <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
       Back
     </button>
