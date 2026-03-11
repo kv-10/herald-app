@@ -250,6 +250,17 @@ body::after {
 .cat-status-chip.normal { background: var(--accentd); color: var(--accent); border: 1px solid rgba(20,83,45,0.3); }
 .cat-status-chip.warn   { background: rgba(180,115,0,0.1); color: #8a5c00; border: 1px solid rgba(180,115,0,0.3); }
 .cat-status-chip.danger { background: var(--redd); color: var(--red); border: 1px solid rgba(197,48,48,0.25); }
+/* Fixed price row — always at top of sheet body, never reflows */
+.cat-price-row {
+  display: flex; align-items: stretch;
+  background: linear-gradient(135deg, var(--accent) 0%, #1c7a42 100%);
+  border-radius: 16px; overflow: hidden;
+  animation: catStatIn 0.3s cubic-bezier(0.22,1,0.36,1) 0.02s both;
+}
+.cat-price-card { flex: 1; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+.cat-price-divider { width: 1px; background: rgba(255,255,255,0.18); margin: 12px 0; }
+.cat-price-label { font-family: 'Outfit', sans-serif; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: rgba(255,255,255,0.6); }
+.cat-price-val { font-family: 'Bricolage Grotesque', sans-serif; font-size: 26px; font-weight: 800; color: #fff; letter-spacing: -0.5px; line-height: 1; }
 /* Size chip */
 .size-chip {
   display: inline-block; font-family: 'IBM Plex Mono', monospace;
@@ -955,18 +966,35 @@ body::after {
       <button class="cat-sheet-close" onclick="closeCatalogPopup()">✕</button>
     </div>
     <div class="cat-sheet-body">
+      <!-- FIXED: Prices always shown first -->
+      <div class="cat-price-row">
+        <div class="cat-price-card cat-price-ws">
+          <div class="cat-price-label">Wholesale</div>
+          <div class="cat-price-val" id="catPopWholesale">—</div>
+        </div>
+        <div class="cat-price-divider"></div>
+        <div class="cat-price-card cat-price-rp">
+          <div class="cat-price-label">Retail</div>
+          <div class="cat-price-val" id="catPopRetail">—</div>
+        </div>
+      </div>
+      <!-- CONDITIONAL: rest of details -->
       <div class="cat-stat-grid">
         <div class="cat-stat">
           <div class="cat-stat-label">Brand</div>
           <div class="cat-stat-val" id="catPopBrand">—</div>
         </div>
+        <div class="cat-stat">
+          <div class="cat-stat-label">Order Multiple</div>
+          <div class="cat-stat-val accent mono" id="catPopMultiple">—</div>
+        </div>
         <div class="cat-stat" id="catPopSizeCard" style="display:none">
           <div class="cat-stat-label">Size</div>
           <div class="cat-stat-val mono" id="catPopSize">—</div>
         </div>
-        <div class="cat-stat">
-          <div class="cat-stat-label">Order Multiple</div>
-          <div class="cat-stat-val accent mono" id="catPopMultiple">—</div>
+        <div class="cat-stat" id="catPopSubCard" style="display:none">
+          <div class="cat-stat-label">Substituted By</div>
+          <div class="cat-stat-val mono" id="catPopSubNum" style="font-size:14px;cursor:pointer;text-decoration:underline;text-underline-offset:3px" onclick="jumpToSub()">—</div>
         </div>
       </div>
       <div class="cat-status-row" id="catPopStatusRow" style="display:none">
@@ -990,8 +1018,8 @@ body::after {
     <div style="width:10px"></div>
   </div>
   <div class="cat-search-wrap">
-    <input id="catSearchInput" class="cat-search-input" type="text" inputmode="numeric"
-      placeholder="Type item number..."
+    <input id="catSearchInput" class="cat-search-input" type="text"
+      placeholder="Item #, brand, or product name..."
       oninput="onCatSearch(this.value)">
     <button class="cat-search-clear" id="catClearBtn" onclick="clearCatSearch()">✕</button>
   </div>
@@ -1762,27 +1790,53 @@ function sizeChipHtml(itemNum) {
   return sz ? `<span class="size-chip">${sz}</span>` : '';
 }
 
+let _catPopCurrentSub = null;
+function jumpToSub() {
+  if (!_catPopCurrentSub) return;
+  closeCatalogPopup();
+  setTimeout(() => showCatalogPopup(_catPopCurrentSub), 420);
+}
+
 function showCatalogPopup(itemNum) {
-  const info = catInfo(itemNum);
+  // Try direct lookup first; if not found, try reverse sub lookup
+  let info = catInfo(itemNum);
+  let resolvedNum = String(itemNum);
+  if (!info) {
+    const parent = Object.keys(catalog).find(k => catalog[k].sub === resolvedNum);
+    if (parent) { resolvedNum = parent; info = catalog[parent]; }
+  }
   if (!info) return;
+
   const displayDesc = info.search
     ? info.search.replace(/\b\w/g, c => c.toUpperCase())
     : null;
   const rawChanged = displayDesc && displayDesc.toLowerCase() !== info.desc.toLowerCase();
-  document.getElementById('catPopItemNum').textContent  = 'ITEM #' + itemNum;
+  document.getElementById('catPopItemNum').textContent  = 'ITEM #' + resolvedNum;
   document.getElementById('catPopDesc').textContent     = info.desc;
   document.getElementById('catPopExpanded').textContent = rawChanged ? displayDesc : '';
+
+  // Prices — always shown
+  const fmt = n => (n != null && n !== 0) ? '$' + n.toFixed(2) : '—';
+  document.getElementById('catPopWholesale').textContent = fmt(info.wholesale ?? null);
+  document.getElementById('catPopRetail').textContent    = fmt(info.retail ?? null);
+
+  // Brand + multiple
   document.getElementById('catPopBrand').textContent    = info.brand || '—';
   document.getElementById('catPopMultiple').textContent = '×' + info.multiple;
+
   // Size card
   const sz = parseSize(info.desc);
   const sizeCard = document.getElementById('catPopSizeCard');
-  if (sz && sizeCard) {
-    document.getElementById('catPopSize').textContent = sz;
-    sizeCard.style.display = '';
-  } else if (sizeCard) {
-    sizeCard.style.display = 'none';
+  if (sizeCard) { document.getElementById('catPopSize').textContent = sz || '—'; sizeCard.style.display = sz ? '' : 'none'; }
+
+  // Sub item card — shows item this one is substituted by
+  _catPopCurrentSub = info.sub || null;
+  const subCard = document.getElementById('catPopSubCard');
+  if (subCard) {
+    if (info.sub) { document.getElementById('catPopSubNum').textContent = '#' + info.sub; subCard.style.display = ''; }
+    else { subCard.style.display = 'none'; }
   }
+
   // Status row
   const statusRow = document.getElementById('catPopStatusRow');
   const statusEl  = document.getElementById('catPopStatus');
@@ -1790,14 +1844,15 @@ function showCatalogPopup(itemNum) {
     const s = info.status.trim().toUpperCase();
     let cls = 'cat-status-chip normal';
     if (s === 'OOS' || s === 'INOT' || s === 'ROS') cls = 'cat-status-chip danger';
-    else if (s === 'RLST') cls = 'cat-status-chip warn';
+    else if (s === 'RLST' || s === 'LST') cls = 'cat-status-chip warn';
     statusEl.className = cls;
     statusEl.textContent = s;
     statusRow.style.display = '';
   } else if (statusRow) {
     statusRow.style.display = 'none';
   }
-  // Open bottom sheet with spring animation
+
+  // Open bottom sheet
   const el = document.getElementById('catalogPopup');
   const sheet = document.getElementById('catSheet');
   el.style.display = 'flex';
@@ -1816,6 +1871,15 @@ function closeCatalogPopup() {
 
 // ── BROWSE CATALOG ──
 const CAT_MAX_RESULTS = 40;
+// Reverse index: sub item# → parent item# (built once on first search)
+let _subIndex = null;
+function buildSubIndex() {
+  if (_subIndex) return;
+  _subIndex = {};
+  for (const key of Object.keys(catalog)) {
+    if (catalog[key].sub) _subIndex[catalog[key].sub] = key;
+  }
+}
 
 function onCatSearch(raw) {
   const q = raw.trim();
@@ -1843,56 +1907,94 @@ function renderCatalogResults(q) {
 
   if (!q) {
     status.textContent = Object.keys(catalog).length.toLocaleString() + ' items in catalog';
-    area.innerHTML = '<div class="cat-empty-state"><div class="icon">🔍</div><div>Type an item number or product name to search</div></div>';
+    area.innerHTML = '<div class="cat-empty-state"><div class="icon">🔍</div><div>Search by item #, substitute #, brand, or product name</div></div>';
     return;
   }
 
+  buildSubIndex();
   const ql = q.toLowerCase();
-  const escQ  = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const escQl = ql.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-  // Priority: item# starts-with, item# contains, description matches
-  const numStarts = [], numContains = [], descMatches = [];
+  // 5 priority buckets
+  const exact = [], starts = [], subExact = [], contains = [], textMatch = [];
+  const seen = new Set();
+
   for (const key of Object.keys(catalog)) {
-    if (key.startsWith(q))         numStarts.push(key);
-    else if (key.includes(q))      numContains.push(key);
-    else if ((catalog[key].search || catalog[key].desc.toLowerCase()).includes(ql)) descMatches.push(key);
-    if (numStarts.length + numContains.length + descMatches.length >= CAT_MAX_RESULTS * 2) break;
+    if (seen.size >= CAT_MAX_RESULTS * 3) break;
+    const info = catalog[key];
+    const kl    = key.toLowerCase();
+    const brand = (info.brand  || '').toLowerCase();
+    const desc  = (info.desc   || '').toLowerCase();
+    const srch  = (info.search || '').toLowerCase();
+    const sub   = (info.sub    || '').toLowerCase();
+
+    if (key === q)              { exact.push(key);     seen.add(key); }
+    else if (kl.startsWith(ql)) { starts.push(key);    seen.add(key); }
+    else if (sub === ql)        { subExact.push(key);   seen.add(key); }
+    else if (kl.includes(ql))   { contains.push(key);   seen.add(key); }
+    else if (brand.includes(ql) || desc.includes(ql) || srch.includes(ql))
+                                { textMatch.push(key);  seen.add(key); }
   }
-  const results = [...numStarts, ...numContains, ...descMatches].slice(0, CAT_MAX_RESULTS);
+
+  // Sub# prefix match for numeric queries
+  if (/^\d+$/.test(q) && _subIndex) {
+    for (const [subNum, parentKey] of Object.entries(_subIndex)) {
+      if (!seen.has(parentKey) && subNum.startsWith(q)) {
+        contains.push(parentKey); seen.add(parentKey);
+      }
+    }
+  }
+
+  const results = [...exact, ...starts, ...subExact, ...contains, ...textMatch].slice(0, CAT_MAX_RESULTS);
 
   if (!results.length) {
     status.textContent = '';
-    area.innerHTML = `<div class="cat-empty-state"><div class="icon">—</div><div>No items found for <span style="font-family:'IBM Plex Mono',monospace;color:var(--text2)">${q}</span></div></div>`;
+    area.innerHTML = `<div class="cat-empty-state"><div class="icon">—</div><div>No results for <span style="font-family:'IBM Plex Mono',monospace;color:var(--text2)">${q}</span></div></div>`;
     return;
   }
 
   status.textContent = results.length < CAT_MAX_RESULTS
     ? results.length + ' result' + (results.length !== 1 ? 's' : '')
-    : 'Top ' + CAT_MAX_RESULTS + ' results — keep typing to narrow down';
+    : 'Top ' + CAT_MAX_RESULTS + ' — keep typing to narrow down';
 
-  const hlSpan = (str, pat) => str.replace(new RegExp('(' + pat + ')', 'gi'),
-    '<span style="color:var(--text);background:rgba(11,107,63,0.13);border-radius:3px;padding:0 1px">$1</span>');
+  const hl = (str, pat) => pat
+    ? str.replace(new RegExp('(' + pat + ')', 'gi'), '<span style="color:var(--accent);background:rgba(20,83,45,0.1);border-radius:3px;padding:0 2px;font-weight:700">$1</span>')
+    : str;
 
   area.innerHTML = results.map(key => {
     const info = catalog[key];
-    const rawDesc = info.desc;
-    const displayDesc = info.search
-      ? info.search.replace(/\b\w/g, c => c.toUpperCase())
-      : null;
-    const rawChanged = displayDesc && displayDesc.toLowerCase() !== rawDesc.toLowerCase();
-    const isNumMatch = key.startsWith(q) || key.includes(q);
-    const highlightedKey  = isNumMatch ? hlSpan(key, escQ) : key;
-    const highlightedRaw  = isNumMatch ? rawDesc : (!isNumMatch ? hlSpan(rawDesc, escQl) : rawDesc);
-    const sz = parseSize(rawDesc);
+    const isNumMatch = key.toLowerCase().includes(ql);
+    const isSubMatch = (info.sub || '') === q || (info.sub || '').startsWith(q);
+    const sz = parseSize(info.desc);
+    const displayDesc = info.search ? info.search.replace(/\b\w/g, c => c.toUpperCase()) : null;
+    const rawChanged = displayDesc && displayDesc.toLowerCase() !== info.desc.toLowerCase();
+
+    const numDisplay  = isNumMatch ? hl(key, escQl) : key;
+    const descDisplay = (!isNumMatch && !isSubMatch) ? hl(info.desc, escQl) : info.desc;
+    const srchDisplay = rawChanged ? ((!isNumMatch && !isSubMatch) ? hl(displayDesc, escQl) : displayDesc) : null;
+    const brandDisplay = hl(info.brand || '', escQl);
+
+    const subTag = info.sub
+      ? (isSubMatch
+          ? `<span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--blue);background:var(--blued);border-radius:4px;padding:1px 6px;margin-left:6px">sub #${hl(info.sub, escQl)}</span>`
+          : `<span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-left:6px">→ ${info.sub}</span>`)
+      : '';
+
+    const priceTag = (info.retail != null)
+      ? `<span style="font-family:'Bricolage Grotesque',sans-serif;font-size:14px;font-weight:800;color:var(--accent);letter-spacing:-0.3px">$${info.retail.toFixed(2)}</span>`
+      : '';
+
     return `<div class="cat-result-item" onclick="showCatalogPopup('${key}')">
       <div class="cat-ri-left">
-        <div class="cat-ri-num">#${highlightedKey}${sz ? `<span class="size-chip">${sz}</span>` : ''}</div>
-        <div class="cat-ri-desc">${highlightedRaw}</div>
-        ${rawChanged ? `<div style="font-size:12px;color:var(--text2);margin-top:2px">${!isNumMatch ? hlSpan(displayDesc, escQl) : displayDesc}</div>` : ''}
-        <div class="cat-ri-brand">${info.brand}</div>
+        <div class="cat-ri-num">#${numDisplay}${sz ? `<span class="size-chip">${sz}</span>` : ''}${subTag}</div>
+        <div class="cat-ri-desc">${descDisplay}</div>
+        ${srchDisplay ? `<div style="font-size:12px;color:var(--text2);margin-top:2px;font-family:'Outfit',sans-serif">${srchDisplay}</div>` : ''}
+        <div class="cat-ri-brand">${brandDisplay}</div>
       </div>
-      <div class="cat-ri-right">×${info.multiple}</div>
+      <div class="cat-ri-right" style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+        ${priceTag}
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)">×${info.multiple}</span>
+      </div>
     </div>`;
   }).join('');
 }
