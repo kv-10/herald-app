@@ -489,18 +489,24 @@ body::before {
       <button class="store-btn" onclick="selectOperator('Shruti')"><span class="store-btn-name">Shruti</span><span class="store-btn-arr">›</span></button>
     </div>
   </div>
+  <div style="position:absolute;bottom:60px;left:28px;right:28px;display:flex;gap:10px">
+    <button class="hist-link" style="flex:1" onclick="goTo('s-history'); renderHist()">Past Orders</button>
+    <button class="hist-link" style="flex:1" onclick="goTo('s-catalog')">Browse Catalog</button>
+  </div>
   <div style="position:absolute;bottom:28px;left:0;right:0;text-align:center;font-size:11px;color:var(--muted);letter-spacing:0.5px;font-family:'DM Sans',sans-serif">made by <span style="color:var(--text2);font-weight:600">Ketan Vashisht</span></div>
+</div>
 
-<div id="s-store" class="screen" style="position:relative">
+<div id="s-store" class="screen" style="position:relative;justify-content:center;padding:0 28px 48px">
   <div style="position:absolute;top:14px;left:20px;z-index:2">
     <button class="back-btn" onclick="goTo('s-operator')">
       <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
       Back
     </button>
   </div>
-  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 28px;width:100%">
-    <div class="store-heading">Which store<br>today?</div>
+  <div style="width:100%">
+    <div class="store-heading" style="margin-bottom:28px;text-align:center">Which store<br>today?</div>
     <div class="store-list" id="storeList"></div>
+
   </div>
 </div>
 
