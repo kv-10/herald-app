@@ -1041,7 +1041,7 @@ const HK = 'pv_hist_v4', DP = 'pv_draft_v4_';
 // ── CATALOG ──
 let catalog = {};
 let catalogLoaded = false;
-const CATALOG_URL = 'https://petvalu-bot.vercel.app/catalog.json';
+const CATALOG_URL = 'https://petvalu-order.vercel.app/catalog.json';
 
 async function loadCatalog() {
   const urls = [
@@ -2030,7 +2030,7 @@ refreshDisp(); refreshNext(); refreshReview();
 
 // ── STARTUP SEQUENCE ──
 const APP_VERSION = 'v3.0.0';
-const VERSION_URL = 'https://petvalu-bot.vercel.app/version.json';
+const VERSION_URL = 'https://petvalu-order.vercel.app/version.json';
 
 function suIcon(id, cls, content) {
   const el = document.getElementById('suIcon' + id);
