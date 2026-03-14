@@ -518,6 +518,49 @@ body::after {
 @keyframes suSpin {
   from { transform: rotate(0deg); } to { transform: rotate(360deg); }
 }
+
+/* ── ENTRY INPUT (cursor positioning) ── */
+#eInput {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 58px; font-weight: 800; color: var(--text);
+  background: transparent; border: none; outline: none;
+  width: 100%; padding: 0; margin: 0 0 10px 0;
+  min-height: 64px; line-height: 1;
+  letter-spacing: -2px; font-variant-numeric: tabular-nums;
+  caret-color: var(--accent);
+  -webkit-user-select: text; user-select: text;
+  word-break: break-all; display: block;
+  box-sizing: border-box;
+}
+#eInput.qoh-mode  { caret-color: var(--blue); }
+#eInput.edit-mode { color: var(--text2); }
+#eInput::placeholder {
+  font-family: 'Outfit', sans-serif; font-size: 22px;
+  font-weight: 500; color: var(--border2);
+  letter-spacing: 0; font-variant-numeric: normal;
+}
+/* ── SANITY MODAL ── */
+#sanityOverlay { position:fixed; inset:0; z-index:1002; background:rgba(6,9,16,0.88); backdrop-filter:blur(6px); display:none; align-items:flex-end; justify-content:center; }
+#sanitySheet {
+  width:100%; max-width:480px; background:var(--s1);
+  border-radius:24px 24px 0 0; border-top:1px solid var(--border2);
+  padding:0 0 34px; transform:translateY(100%);
+  transition:transform 0.28s cubic-bezier(0.4,0,0.2,1);
+}
+.sanity-handle { width:40px; height:4px; background:var(--border2); border-radius:99px; margin:12px auto 16px; }
+.sanity-header { display:flex; align-items:center; gap:12px; padding:0 22px 12px; border-bottom:1px solid var(--border); }
+.sanity-emoji  { font-size:22px; flex-shrink:0; }
+.sanity-title  { font-family:'Syne',sans-serif; font-size:17px; font-weight:800; color:var(--text); }
+.sanity-body   { padding:16px 22px 20px; }
+.sanity-item   { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; color:var(--accent); letter-spacing:1px; margin-bottom:6px; }
+.sanity-msg    { font-size:14px; color:var(--text2); line-height:1.65; }
+.sanity-msg b  { color:var(--text); font-weight:700; }
+.sanity-btns   { display:flex; gap:10px; padding:0 18px; }
+.sanity-btn-sec  { flex:1; padding:15px; background:var(--s2); color:var(--text2); border:1px solid var(--border); border-radius:13px; font-family:'Figtree',sans-serif; font-size:14px; font-weight:700; cursor:pointer; }
+.sanity-btn-sec:active { background:var(--s3); }
+.sanity-btn-pri  { flex:1; padding:15px; border:none; border-radius:13px; font-family:'Figtree',sans-serif; font-size:14px; font-weight:800; cursor:pointer; }
+.sanity-btn-danger { background:var(--redd); color:var(--red); border:1px solid rgba(255,94,122,0.3); border-radius:13px; flex:1; padding:15px; font-family:'Figtree',sans-serif; font-size:14px; font-weight:700; cursor:pointer; }
+.sanity-btn-danger:active { opacity:0.8; }
 </style>
 </head>
 <body>
@@ -568,7 +611,7 @@ body::after {
     <!-- Title + version -->
     <div style="opacity:0;animation:suFadeUp 0.7s cubic-bezier(0.22,1,0.36,1) forwards 0.2s;margin-bottom:32px">
       <div class="brand-line" style="font-size:16px;letter-spacing:5px;margin-bottom:10px">Project: Herald</div>
-      <div id="appVersionBadge" style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:var(--muted);letter-spacing:2px">v3.0.0</div>
+      <div id="appVersionBadge" style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:var(--muted);letter-spacing:2px">v3.0.1</div>
     </div>
 
     <!-- Heading -->
@@ -632,7 +675,7 @@ body::after {
       <div class="step-seg" id="seg2"></div>
     </div>
     <div class="e-field-label" id="eLabel">Item Number</div>
-    <div class="e-value dim" id="eVal">enter item #<span class="e-cursor" id="eCursor"></span></div>
+    <input type="text" id="eInput" inputmode="none" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="enter item #">
     <div class="e-context" id="eCtx"></div>
   </div>
 
@@ -942,6 +985,23 @@ body::after {
 
 <div id="toast"></div>
 
+
+<!-- ══ SANITY CHECK MODAL ══ -->
+<div id="sanityOverlay">
+  <div id="sanitySheet">
+    <div class="sanity-handle"></div>
+    <div class="sanity-header">
+      <div class="sanity-emoji" id="sanityEmoji">⚠️</div>
+      <div class="sanity-title" id="sanityTitle">Double-check</div>
+    </div>
+    <div class="sanity-body">
+      <div class="sanity-item" id="sanityItemLine"></div>
+      <div class="sanity-msg"  id="sanityMsg"></div>
+    </div>
+    <div class="sanity-btns" id="sanityBtns"></div>
+  </div>
+</div>
+
 <!-- Duplicate item modal -->
 <div id="dupModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(10,28,16,0.75);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:28px">
   <div style="background:var(--s1);border:1px solid var(--border);border-radius:20px;padding:28px 24px;width:100%;max-width:340px;text-align:center">
@@ -1069,13 +1129,24 @@ async function loadCatalog() {
 
 function catInfo(itemNum) {
   if (!itemNum) return null;
-  return catalog[String(itemNum).trim()] || null;
+  const raw = String(itemNum).trim();
+  // Try uppercase first (all catalog keys are uppercase)
+  const upper = raw.toUpperCase();
+  if (catalog[upper]) return catalog[upper];
+  // Try exact match
+  if (catalog[raw]) return catalog[raw];
+  // Last resort: case-insensitive scan (catches any edge cases)
+  const lower = raw.toLowerCase();
+  for (const k in catalog) {
+    if (k.toLowerCase() === lower) return catalog[k];
+  }
+  return null;
 }
 
 function infoBtnHtml(itemNum, extraStyle) {
   const info = catInfo(itemNum);
   const cls  = info ? 'has-info' : 'no-info';
-  const tip  = info ? `onclick="showCatalogPopup('${itemNum}');event.stopPropagation()"` : '';
+  const tip  = info ? `onclick="showCatalogPopup('${String(itemNum).trim().toUpperCase()}');event.stopPropagation()"` : '';
   return `<button class="info-btn ${cls}" ${tip} ${extraStyle||''}>ⓘ</button>`;
 }
 
@@ -1143,17 +1214,30 @@ function selectStore(name) {
 
 // ── ENTRY KEYPAD ──
 function kp(d) {
-  curValue += d;
-  if (editIdx >= 0) { refreshEditDisp(); } else { refreshDisp(); }
-  // Pulse the value display
-  const valEl = document.getElementById('eVal');
-  if (valEl && curValue) {
-    valEl.classList.remove('val-tick');
-    void valEl.offsetWidth;
-    valEl.classList.add('val-tick');
-  }
+  if (capsOn && kbdMode === "abc" && d.length === 1 && d.match(/[a-zA-Z]/)) d = d.toUpperCase();
+  const inp = document.getElementById('eInput');
+  const start = inp.selectionStart != null ? inp.selectionStart : curValue.length;
+  const end   = inp.selectionEnd   != null ? inp.selectionEnd   : curValue.length;
+  curValue = curValue.slice(0, start) + d + curValue.slice(end);
+  inp.value = curValue;
+  const newPos = start + d.length;
+  inp.setSelectionRange(newPos, newPos);
+  // Pulse
+  inp.classList.remove('val-tick'); void inp.offsetWidth; inp.classList.add('val-tick');
 }
-function kpDel()  { curValue = curValue.slice(0,-1); editIdx >= 0 ? refreshEditDisp() : refreshDisp(); }
+function kpDel() {
+  const inp = document.getElementById('eInput');
+  const start = inp.selectionStart != null ? inp.selectionStart : curValue.length;
+  const end   = inp.selectionEnd   != null ? inp.selectionEnd   : curValue.length;
+  let newPos;
+  if (start !== end) {
+    curValue = curValue.slice(0, start) + curValue.slice(end); newPos = start;
+  } else if (start > 0) {
+    curValue = curValue.slice(0, start - 1) + curValue.slice(start); newPos = start - 1;
+  } else { return; }
+  inp.value = curValue;
+  inp.setSelectionRange(newPos, newPos);
+}
 function kpBack() {
   if (editIdx >= 0) return;
   curRow[curField] = curValue;
@@ -1201,12 +1285,14 @@ function kpNext() {
 }
 function commitRow() {
   if (!curRow.item) { showToast('Item number is empty'); return; }
-  items.push({ id:nextId++, itemNum:curRow.item, order:parseInt(curRow.order)||0, qoh:parseInt(curRow.qoh)||0, cases:!!curRow.cases });
+  const _newIdx = items.length;
+  items.push({ id:nextId++, itemNum:curRow.item.toUpperCase(), order:parseInt(curRow.order)||0, qoh:parseInt(curRow.qoh)||0, cases:!!curRow.cases });
   casesMode = false; curRow.cases = false; setCasesMode(false);
   if (navigator.vibrate) navigator.vibrate(40);
   saveDraft(); curRow={item:'',order:'',qoh:''}; curField='item'; curValue='';
   renderEntryItems(); refreshDisp(); refreshNext(); refreshReview();
   showToast('Saved');
+  runSanityChecks(_newIdx);
 }
 function deleteEntryItem(idx) {
   if (editIdx === idx) cancelEdit();
@@ -1228,12 +1314,16 @@ function startEdit(idx, field) {
     const casesRow = document.getElementById('casesToggleRow');
     if (casesRow) casesRow.classList.add('show');
   }
+  // Set input value and position cursor at end
+  const _inp = document.getElementById('eInput');
+  _inp.value = curValue;
+  requestAnimationFrame(() => { _inp.focus(); _inp.setSelectionRange(curValue.length, curValue.length); });
   refreshEditDisp(); renderEntryItems();
 }
 function saveInlineEdit() {
   if (editIdx < 0) return;
   const item = items[editIdx]; if (!item) { cancelEdit(); return; }
-  if (editField==='item')  item.itemNum = curValue || item.itemNum;
+  if (editField==='item')  item.itemNum = (curValue || item.itemNum).toUpperCase();
   if (editField==='order') { item.order = parseInt(curValue)||0; item.cases = casesMode; }
   if (editField==='qoh')   item.qoh     = parseInt(curValue)||0;
   saveDraft(); cancelEdit(); renderEntryItems(); refreshReview();
@@ -1246,13 +1336,13 @@ function cancelEdit() {
 }
 function refreshEditDisp() {
   const lbl = document.getElementById('eLabel');
-  const val = document.getElementById('eVal');
-  const cur = document.getElementById('eCursor');
+  const inp = document.getElementById('eInput');
   lbl.textContent = 'Editing — ' + LABELS[editField];
   lbl.className   = 'e-field-label edit-lbl';
-  cur.className   = 'e-cursor' + (editField==='qoh' ? ' blue-cur' : '');
-  if (curValue) { val.className='e-value'; val.innerHTML=curValue; val.appendChild(cur); }
-  else { val.className='e-value dim'; val.innerHTML='enter value'; val.appendChild(cur); }
+  inp.className   = 'edit-mode' + (editField==='qoh' ? ' qoh-mode' : '');
+  inp.placeholder = 'enter value';
+  // value set by startEdit/kp directly — only sync if out of sync
+  if (inp.value !== curValue) inp.value = curValue;
   const nb = document.getElementById('nextBtn');
   nb.textContent='Save'; nb.className='k kblue';
   document.getElementById('eCtx').innerHTML='';
@@ -1267,19 +1357,24 @@ function refreshDisp() {
     s.className = 'step-seg' + (i<=fi?' active':'') + (i<fi?' done':'');
   });
   const lbl = document.getElementById('eLabel');
-  const val = document.getElementById('eVal');
-  const cur = document.getElementById('eCursor');
+  const inp = document.getElementById('eInput');
   lbl.textContent = LABELS[curField];
   lbl.className   = 'e-field-label' + (curField==='qoh'?' blue-lbl':'');
-  cur.className   = 'e-cursor' + (curField==='qoh'?' blue-cur':'');
-  if (curValue) { val.className='e-value'; val.innerHTML=curValue; val.appendChild(cur); }
-  else { val.className='e-value dim'; val.innerHTML=PROMPTS[curField]; val.appendChild(cur); }
+  inp.className   = curField==='qoh' ? 'qoh-mode' : '';
+  inp.placeholder = PROMPTS[curField];
+  inp.value       = curValue;
   const ctx = document.getElementById('eCtx');
-  if (curField==='item') { ctx.innerHTML=''; return; }
-  let h='';
-  if (curRow.item) h += `<div class="e-ctx-chip">Item <span class="cv">${curRow.item}</span></div>`;
-  if (curField==='qoh' && curRow.order) h += `<div class="e-ctx-chip">Order <span class="ca">${curRow.order}</span></div>`;
-  ctx.innerHTML = h;
+  if (curField==='item') { ctx.innerHTML=''; }
+  else {
+    let h='';
+    if (curRow.item) h += `<div class="e-ctx-chip">Item <span class="cv">${curRow.item}</span></div>`;
+    if (curField==='qoh' && curRow.order) h += `<div class="e-ctx-chip">Order <span class="ca">${curRow.order}</span></div>`;
+    ctx.innerHTML = h;
+  }
+  // Focus input, cursor to end — only if not already active
+  if (document.activeElement !== inp) {
+    requestAnimationFrame(() => { inp.focus(); inp.setSelectionRange(curValue.length, curValue.length); });
+  }
 }
 function refreshNext() {
   if (editIdx >= 0) return;
@@ -2037,7 +2132,7 @@ function setOverlayCasesMode(val) {
 refreshDisp(); refreshNext(); refreshReview();
 
 // ── STARTUP SEQUENCE ──
-const APP_VERSION = 'v3.0.0';
+const APP_VERSION = 'v3.0.1';
 const VERSION_URL = 'https://project-herald.vercel.app/version.json';
 
 function suIcon(id, cls, content) {
@@ -2126,7 +2221,7 @@ runStartup();
 
 // ── KEYBOARD TOGGLE ──
 let kbdMode = 'num'; // 'num' | 'abc'
-let capsOn  = false;
+let capsOn  = true;
 
 function toggleKbd() {
   kbdMode = kbdMode === 'num' ? 'abc' : 'num';
@@ -2142,6 +2237,16 @@ function applyKbdMode() {
   qwerty.classList.toggle('show', isAbc);
   togBtn.textContent    = isAbc ? '123' : 'ABC';
   togBtn.classList.toggle('active', isAbc);
+  // Caps is always on — enforce it whenever ABC keyboard is shown
+  if (isAbc) {
+    capsOn = true;
+    const caseBtn = document.getElementById('caseBtn');
+    if (caseBtn) { caseBtn.textContent = '↑ A'; caseBtn.style.color = 'var(--accent)'; }
+    document.querySelectorAll('.qk:not(.wide)').forEach(k => {
+      const txt = k.textContent.trim();
+      if (txt.length === 1 && txt.match(/[a-zA-Z]/)) k.textContent = txt.toUpperCase();
+    });
+  }
   // Sync next/review buttons from numpad into qwerty
   syncQwertyButtons();
 }
@@ -2156,17 +2261,10 @@ function syncQwertyButtons() {
 }
 
 function toggleCase() {
-  capsOn = !capsOn;
+  // Caps lock is always on — tapping the caps key does nothing
+  capsOn = true;
   const btn = document.getElementById('caseBtn');
-  btn.textContent = capsOn ? '↑ A' : '↑ a';
-  btn.style.color = capsOn ? 'var(--accent)' : '';
-  // Update all letter keys
-  document.querySelectorAll('.qk:not(.wide)').forEach(k => {
-    const txt = k.textContent.trim();
-    if (txt.length === 1 && txt.match(/[a-zA-Z]/)) {
-      k.textContent = capsOn ? txt.toUpperCase() : txt.toLowerCase();
-    }
-  });
+  if (btn) { btn.textContent = '↑ A'; btn.style.color = 'var(--accent)'; }
 }
 
 // Auto-switch to numpad when field changes to order/qoh
@@ -2300,6 +2398,133 @@ async function saveToDrive() {
   } catch(e) {
     showDriveError();
     console.error('Drive upload error:', e);
+  }
+}
+
+// ── SANITY CHECKS ──
+let _sanityQueue = [];
+let _sanityItemIdx = -1;
+
+function runSanityChecks(itemIdx) {
+  const item = items[itemIdx];
+  if (!item) return;
+  const info = catInfo(item.itemNum);
+  _sanityItemIdx = itemIdx;
+  _sanityQueue = [];
+
+  if (!info) {
+    _sanityQueue.push({ type: 'no_catalog' });
+  } else {
+    const om = info.multiple || 1;
+    // Effective order qty in units
+    const effectiveOrder = item.cases ? item.order * om : item.order;
+
+    if (om <= 1 && effectiveOrder > 4) {
+      _sanityQueue.push({ type: 'order_high', om, effectiveOrder });
+    } else if (om > 1 && effectiveOrder > 2 * om) {
+      _sanityQueue.push({ type: 'order_high', om, effectiveOrder });
+    }
+
+    if (om <= 1 && item.qoh > 4) {
+      _sanityQueue.push({ type: 'qoh_high', om, qoh: item.qoh });
+    } else if (om > 1 && item.qoh > 2 * om) {
+      _sanityQueue.push({ type: 'qoh_high', om, qoh: item.qoh });
+    }
+  }
+
+  if (_sanityQueue.length > 0) _showNextSanity();
+}
+
+function _showNextSanity() {
+  if (_sanityQueue.length === 0) return;
+  const w    = _sanityQueue[0];
+  const item = items[_sanityItemIdx];
+  if (!item) return;
+
+  document.getElementById('sanityItemLine').textContent = 'ITEM  ' + item.itemNum;
+
+  const emoji  = document.getElementById('sanityEmoji');
+  const title  = document.getElementById('sanityTitle');
+  const msg    = document.getElementById('sanityMsg');
+  const btns   = document.getElementById('sanityBtns');
+
+  if (w.type === 'no_catalog') {
+    emoji.textContent  = '🔍';
+    title.textContent  = 'Not in catalog';
+    msg.innerHTML      = `<b>${item.itemNum}</b> wasn't found in the product catalog. It might be a new item, or a possible typo.`;
+    btns.innerHTML     = `<button class="sanity-btn-danger" onclick="sanityAction(1)">Remove item</button>
+                          <button class="sanity-btn-pri" style="background:var(--accent);color:#060910" onclick="sanityAction(2)">Keep it</button>`;
+  } else if (w.type === 'order_high') {
+    emoji.textContent = '⚠️';
+    title.textContent = 'Large order quantity';
+    const casesNote   = item.cases ? ` (${item.order} case${item.order === 1 ? '' : 's'} × ${w.om} = ${w.effectiveOrder} units)` : '';
+    if (w.om <= 1) {
+      msg.innerHTML = `Order qty of <b>${w.effectiveOrder}</b>${casesNote} is quite high for an item with an order multiple of 1. Just checking this is intentional.`;
+    } else {
+      msg.innerHTML = `Order qty of <b>${w.effectiveOrder}</b>${casesNote} is more than 2× the order multiple of <b>${w.om}</b>. Just making sure this is right.`;
+    }
+    btns.innerHTML = `<button class="sanity-btn-sec" onclick="sanityAction(1)">Edit qty</button>
+                      <button class="sanity-btn-pri" style="background:var(--accent);color:#060910" onclick="sanityAction(2)">Looks right ✓</button>`;
+  } else if (w.type === 'qoh_high') {
+    emoji.textContent = '⚠️';
+    title.textContent = 'High on-hand count';
+    if (w.om <= 1) {
+      msg.innerHTML = `On-hand count of <b>${w.qoh}</b> seems high for an item with an order multiple of 1. Could this be a typo?`;
+    } else {
+      msg.innerHTML = `On-hand count of <b>${w.qoh}</b> is more than 2× the order multiple of <b>${w.om}</b>. Did you mean to enter a different number?`;
+    }
+    btns.innerHTML = `<button class="sanity-btn-sec" onclick="sanityAction(1)">Edit on hand</button>
+                      <button class="sanity-btn-pri" style="background:var(--accent);color:#060910" onclick="sanityAction(2)">Looks right ✓</button>`;
+  }
+
+  // Slide up
+  const overlay = document.getElementById('sanityOverlay');
+  overlay.style.display = 'flex';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.getElementById('sanitySheet').style.transform = 'translateY(0)';
+  }));
+}
+
+function _closeSanity(then) {
+  const sheet = document.getElementById('sanitySheet');
+  sheet.style.transform = 'translateY(100%)';
+  setTimeout(() => {
+    document.getElementById('sanityOverlay').style.display = 'none';
+    if (then) then();
+  }, 290);
+}
+
+function sanityAction(btn) {
+  const w = _sanityQueue.shift();
+  if (!w) { _closeSanity(); return; }
+  const item = items[_sanityItemIdx];
+
+  if (w.type === 'no_catalog') {
+    if (btn === 1) { // Remove
+      _closeSanity(() => {
+        if (_sanityItemIdx >= 0 && _sanityItemIdx < items.length) {
+          items.splice(_sanityItemIdx, 1);
+          saveDraft(); renderEntryItems(); refreshReview();
+        }
+        _sanityQueue = []; _sanityItemIdx = -1;
+      });
+      return;
+    }
+    // Keep it — fall through to next warning (none, since no catalog = no further checks)
+    _closeSanity(); return;
+  }
+
+  if (btn === 1) { // Edit action
+    const field = w.type === 'qoh_high' ? 'qoh' : 'order';
+    _closeSanity(() => { startEdit(_sanityItemIdx, field); });
+    return;
+  }
+
+  // "Looks right" — show next in queue or close
+  if (_sanityQueue.length > 0) {
+    _closeSanity(() => setTimeout(_showNextSanity, 60));
+  } else {
+    _closeSanity();
   }
 }
 </script>
