@@ -1,0 +1,34 @@
+name: Build Catalog
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'catalog.csv'   # only runs when catalog.csv is changed
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to commit catalog.json back to the repo
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run catalog parser
+        run: python3 build_catalog.py catalog.csv catalog.json
+
+      - name: Commit updated catalog.json
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add catalog.json
+          # Only commit if something actually changed
+          git diff --cached --quiet && echo "No changes to catalog.json" || git commit -m "chore: rebuild catalog.json from catalog.csv [skip ci]"
+          git push
