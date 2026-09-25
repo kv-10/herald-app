@@ -1,0 +1,576 @@
+
+<!-- ══════════════ SEND TO PORTAL (cloud runner) ══════════════ -->
+<style>
+:root { --yellow:#92400e; --yd:rgba(146,64,14,0.10); }
+/* Live run bar (top of every screen) */
+#hrBar { position:fixed; top:0; left:0; right:0; z-index:400; display:none; align-items:center; gap:10px;
+  padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 12px; background:var(--accent); color:#fff; cursor:pointer;
+  font-family:'Outfit',sans-serif; font-size:13px; font-weight:700; overflow:hidden; box-shadow:0 2px 12px rgba(10,28,16,0.18); }
+#hrBar.show { display:flex; }
+#hrBar .hb-dot { width:8px; height:8px; border-radius:50%; background:#7ee2a0; flex-shrink:0; animation:hbPulse 1.4s ease-in-out infinite; }
+#hrBar .hb-text { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#hrBar .hb-num { font-family:'IBM Plex Mono',monospace; font-weight:700; flex-shrink:0; }
+#hrBar .hb-fill { position:absolute; left:0; bottom:0; height:3px; background:#7ee2a0; width:0%; transition:width 0.5s ease; }
+#hrBar.done    { background:#1e7a45; } #hrBar.done .hb-dot { animation:none; background:#fff; }
+#hrBar.failed  { background:var(--red); } #hrBar.failed .hb-dot { animation:none; background:#fff; }
+#hrBar.stopped { background:#9a5b12; } #hrBar.stopped .hb-dot { animation:none; background:#fff; }
+@keyframes hbPulse { 0%,100% { opacity:1 } 50% { opacity:0.35 } }
+body.hr-has-bar .screen { top:var(--hr-bar-h,42px); height:auto; bottom:0; }
+
+/* Full progress panel */
+#hrPanel { position:fixed; inset:0; z-index:450; background:var(--bg); display:flex; flex-direction:column;
+  padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(env(safe-area-inset-bottom,0px) + 16px);
+  transform:translateY(-100%); transition:transform 0.32s cubic-bezier(0.32,0.72,0,1); visibility:hidden; }
+#hrPanel.open { transform:translateY(0); visibility:visible; }
+.hp-head { display:flex; align-items:flex-start; gap:10px; margin-bottom:12px; }
+.hp-store { font-family:'Bricolage Grotesque',sans-serif; font-size:24px; font-weight:800; color:var(--text); line-height:1.1; letter-spacing:-0.4px; }
+.hp-sub { font-size:12px; color:var(--muted); font-weight:600; margin-top:3px; }
+.hp-min { margin-left:auto; flex-shrink:0; background:var(--s2); border:1px solid var(--border); color:var(--text2); border-radius:12px; padding:9px 12px; font-family:'Outfit',sans-serif; font-size:13px; font-weight:700; cursor:pointer; }
+.hp-step { display:flex; align-items:center; gap:8px; background:var(--s1); border:1px solid var(--border); border-radius:12px; padding:10px 12px; margin-bottom:12px; font-size:13px; font-weight:600; color:var(--text2); }
+.hp-spin { width:14px; height:14px; border:2px solid var(--s3); border-top-color:var(--accent); border-radius:50%; animation:hpSpin 0.8s linear infinite; flex-shrink:0; }
+@keyframes hpSpin { to { transform:rotate(360deg) } }
+.hp-label { display:flex; justify-content:space-between; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted); margin-bottom:6px; }
+.hp-label .mono { font-family:'IBM Plex Mono',monospace; letter-spacing:0.5px; }
+.hp-bar-wrap { height:6px; background:var(--s3); border-radius:99px; overflow:hidden; margin-bottom:10px; flex-shrink:0; }
+.hp-bar { height:100%; background:var(--accent); border-radius:99px; width:0%; transition:width 0.5s cubic-bezier(0.4,0,0.2,1); }
+.hp-stats { display:flex; gap:6px; margin-bottom:10px; flex-shrink:0; }
+.hp-pill { flex:1; padding:7px 3px; border-radius:9px; text-align:center; font-size:11px; font-weight:700; border:1px solid; }
+.hp-pill b { font-family:'Bricolage Grotesque',sans-serif; font-size:21px; font-weight:800; display:block; line-height:1.2; }
+.hp-pill small { font-size:9px; font-weight:600; opacity:0.75; display:block; }
+.hp-pill.ent { background:var(--accentd); border-color:rgba(20,83,45,0.3); color:var(--accent); }
+.hp-pill.skp { background:var(--yd); border-color:rgba(146,64,14,0.3); color:var(--yellow); }
+.hp-pill.nf  { background:var(--redd); border-color:rgba(197,48,48,0.3); color:var(--red); }
+.hp-pill.flg { background:var(--blued); border-color:rgba(0,95,138,0.3); color:var(--blue); }
+.hp-log { flex:1; min-height:0; overflow-y:auto; background:var(--s1); border:1px solid var(--border); border-radius:11px; padding:6px 10px; -webkit-overflow-scrolling:touch; }
+.hp-line { font-size:11px; font-family:'IBM Plex Mono',monospace; padding:3px 0; border-bottom:1px solid var(--border); color:var(--muted); }
+.hp-line:last-child { border-bottom:none; }
+.hp-line.ok { color:var(--accent); } .hp-line.skip { color:var(--yellow); } .hp-line.notfound { color:var(--red); } .hp-line.flag { color:var(--blue); }
+.hp-line.step { color:var(--text2); font-weight:600; }
+.hp-email { margin-top:10px; padding:9px 12px; border-radius:10px; font-size:12px; font-weight:700; border:1px solid var(--border); background:var(--s2); color:var(--text2); display:none; }
+.hp-email.sent { background:var(--accentd); border-color:rgba(20,83,45,0.3); color:var(--accent); }
+.hp-email.failed { background:var(--redd); border-color:rgba(197,48,48,0.3); color:var(--red); }
+.hp-issues { margin-top:10px; background:var(--s1); border:1px solid var(--border); border-radius:11px; padding:10px 12px; max-height:28vh; overflow-y:auto; display:none; }
+.hp-issues h4 { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted); margin:6px 0 4px; }
+.hp-issues div { font-size:12px; font-family:'IBM Plex Mono',monospace; padding:2px 0; color:var(--text2); }
+.hp-actions { display:flex; gap:10px; margin-top:12px; flex-shrink:0; }
+.hr-btn { flex:1; padding:15px; border-radius:13px; font-family:'Outfit',sans-serif; font-size:15px; font-weight:800; cursor:pointer; border:none; }
+.hr-btn:disabled { opacity:0.5; }
+.hr-btn.pri { background:var(--accent); color:#fff; }
+.hr-btn.sec { background:var(--s2); color:var(--text2); border:1px solid var(--border); }
+.hr-btn.red { background:var(--redd); color:var(--red); border:1px solid rgba(197,48,48,0.3); }
+
+/* Send to Portal screen */
+.hr-home-send { width:100%; padding:15px; border-radius:14px; border:none; background:var(--accent); color:#fff; font-family:'Outfit',sans-serif; font-size:15px; font-weight:800; cursor:pointer; margin-bottom:10px; display:flex; align-items:center; justify-content:center; gap:8px; }
+.hr-home-send:active { transform:scale(0.98); }
+.hr-home-send .busy { font-size:11px; font-weight:700; background:rgba(255,255,255,0.18); border-radius:99px; padding:2px 8px; }
+.hr-scroll { flex:1; overflow-y:auto; padding:6px 18px 30px; -webkit-overflow-scrolling:touch; }
+.hr-lock { margin:12px 18px 0; padding:12px 14px; border-radius:12px; background:var(--accentd); border:1px solid rgba(20,83,45,0.3); color:var(--accent); font-size:13px; font-weight:600; line-height:1.45; display:none; cursor:pointer; }
+.hr-group { background:var(--s1); border:1px solid var(--border); border-radius:16px; padding:14px; margin-top:14px; box-shadow:0 1px 3px rgba(10,28,16,0.05); }
+.hr-group.sent { opacity:0.72; }
+.hr-g-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:8px; }
+.hr-g-store { font-size:17px; font-weight:800; color:var(--text); }
+.hr-g-sub { font-size:12px; color:var(--muted); font-weight:600; margin-top:2px; }
+.hr-g-badge { font-size:10px; font-weight:700; border-radius:99px; padding:3px 9px; white-space:nowrap; background:var(--accentd); color:var(--accent); border:1px solid rgba(20,83,45,0.3); }
+.hr-o { display:flex; align-items:center; gap:12px; padding:10px 4px; border-top:1px solid var(--border); cursor:pointer; }
+.hr-o .ck { width:22px; height:22px; border-radius:7px; border:2px solid var(--border2); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:#fff; flex-shrink:0; }
+.hr-o.on .ck { background:var(--accent); border-color:var(--accent); }
+.hr-o .op { font-size:15px; font-weight:700; color:var(--text); }
+.hr-o .mt { font-size:12px; color:var(--muted); font-weight:600; }
+.hr-g-send { width:100%; margin-top:10px; padding:13px; border-radius:12px; border:none; background:var(--accent); color:#fff; font-family:'Outfit',sans-serif; font-size:14px; font-weight:800; cursor:pointer; }
+.hr-g-send:disabled { background:var(--s3); color:var(--muted); }
+.hr-older { text-align:center; padding:16px 0 4px; font-size:13px; font-weight:700; color:var(--text2); cursor:pointer; }
+
+/* Sheets (confirm / PIN / finished) */
+#hrOverlay { position:fixed; inset:0; z-index:455; background:rgba(10,28,16,0.55); backdrop-filter:blur(3px); display:none; }
+#hrSheet { position:fixed; left:0; right:0; bottom:0; z-index:460; background:var(--s1); border-radius:24px 24px 0 0; border-top:1px solid var(--border);
+  padding:0 20px calc(env(safe-area-inset-bottom,0px) + 24px); transform:translateY(110%); transition:transform 0.3s cubic-bezier(0.32,0.72,0,1); max-height:88vh; overflow-y:auto; }
+#hrSheet.open { transform:translateY(0); }
+.hs-grab { width:40px; height:4px; background:var(--border); border-radius:99px; margin:12px auto 18px; }
+.hs-title { font-family:'Bricolage Grotesque',sans-serif; font-size:24px; font-weight:800; color:var(--text); letter-spacing:-0.4px; margin-bottom:4px; }
+.hs-sub { font-size:14px; color:var(--text2); line-height:1.5; margin-bottom:14px; }
+.hs-card { background:var(--s2); border:1px solid var(--border); border-radius:14px; padding:12px 14px; margin-bottom:14px; }
+.hs-row { display:flex; justify-content:space-between; font-size:14px; padding:4px 0; color:var(--text2); }
+.hs-row b { color:var(--text); }
+.hs-note { font-size:12px; color:var(--muted); line-height:1.5; margin-bottom:14px; }
+.hs-pin { display:flex; justify-content:center; gap:10px; margin:6px 0 10px; }
+.hs-pin span { width:48px; height:56px; border-radius:13px; border:2px solid var(--border); background:var(--bg); display:flex; align-items:center; justify-content:center; font-size:26px; font-weight:800; color:var(--text); font-family:'IBM Plex Mono',monospace; }
+.hs-pin span.on { border-color:var(--accent); }
+.hs-pad { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:8px 0 12px; }
+.hs-pad button { padding:14px 0; border-radius:12px; border:1px solid var(--border); background:var(--bg); font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:700; color:var(--text); cursor:pointer; }
+.hs-pad button:active { background:var(--s3); }
+.hs-err { color:var(--red); font-size:13px; font-weight:700; text-align:center; min-height:18px; margin-bottom:8px; }
+.hs-big { font-size:44px; text-align:center; margin:4px 0 6px; }
+</style>
+
+<div id="hrBar" onclick="hrOpenPanel()">
+  <span class="hb-dot"></span><span class="hb-text" id="hbText"></span><span class="hb-num" id="hbNum"></span>
+  <span class="hb-fill" id="hbFill"></span>
+</div>
+
+<div id="hrPanel">
+  <div class="hp-head">
+    <div>
+      <div class="hp-store" id="hpStore">—</div>
+      <div class="hp-sub" id="hpSub"></div>
+    </div>
+    <button class="hp-min" onclick="hrClosePanel()">▴ Minimize</button>
+  </div>
+  <div class="hp-step"><span class="hp-spin" id="hpSpin"></span><span id="hpStep">Starting…</span></div>
+  <div class="hp-label"><span>Progress — <span class="mono" id="hpCount">0 / 0</span></span><span class="mono" id="hpTimer">0:00</span></div>
+  <div class="hp-bar-wrap"><div class="hp-bar" id="hpBar"></div></div>
+  <div class="hp-stats">
+    <div class="hp-pill ent"><b id="hpEnt">0</b>Entered<small>qty set</small></div>
+    <div class="hp-pill skp"><b id="hpSkp">0</b>Skipped<small>no order</small></div>
+    <div class="hp-pill nf"><b id="hpNf">0</b>Not Found<small>manual</small></div>
+    <div class="hp-pill flg"><b id="hpFlg">0</b>Flagged<small>manual</small></div>
+  </div>
+  <div class="hp-log" id="hpLog"></div>
+  <div class="hp-issues" id="hpIssues"></div>
+  <div class="hp-email" id="hpEmail"></div>
+  <div class="hp-actions" id="hpActions"></div>
+</div>
+
+<div id="s-portal" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="goTo('s-operator')">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      Back
+    </button>
+    <div class="topbar-center" style="text-align:center"><div class="topbar-title">Send to Portal</div></div>
+    <div style="width:10px"></div>
+  </div>
+  <div class="hr-lock" id="hrLock" onclick="hrOpenPanel()"></div>
+  <div class="hr-scroll" id="hrList"></div>
+</div>
+
+<div id="hrOverlay" onclick="hrCloseSheet()"></div>
+<div id="hrSheet"></div>
+
+<script>
+// ── SEND TO PORTAL ──────────────────────────────────────────────────────────────────────────────
+// The run happens in the cloud (herald-runner on GitHub Actions). This app only starts it,
+// watches it, and can stop it. Nothing here depends on the app staying open: every time the
+// app opens (or comes back to the foreground) it asks herald-control what is running.
+const HR_API = 'https://herald-control.vercel.app';
+const HR_STORE_NUMS = { 'Lakeshore Rd':'2087', 'Lambton Mall':'2356', 'Corunna':'2372', 'London':'2412' };
+const HR_FINAL = ['done', 'failed', 'stopped'];
+const HR_ACK_KEY = 'herald_portal_ack';
+
+let hrRun = null;          // latest full status of the run being shown
+let hrActive = null;       // summary of a live run (any store), or null
+let hrRecent = [];         // last runs (summary)
+let hrTimer = null, hrTick = null, hrPanelOpen = false, hrLogCount = 0, hrStopping = false;
+let hrGroups = [], hrSel = {}, hrShowOlder = false;
+let hrSheetCtx = null, hrPin = '';
+
+const hrEsc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const hrIsLive = s => s && !HR_FINAL.includes(s.state) && !s.stale;
+function hrAcked() { try { return JSON.parse(localStorage.getItem(HR_ACK_KEY) || '[]'); } catch { return []; } }
+function hrAck(id) { try { const a = hrAcked(); if (!a.includes(id)) a.push(id); localStorage.setItem(HR_ACK_KEY, JSON.stringify(a.slice(-50))); } catch {} }
+
+async function hrApi(path, body) {
+  const opt = body ? { method:'POST', headers:{ 'content-type':'application/json' }, body:JSON.stringify(body) } : { cache:'no-store' };
+  const r = await fetch(HR_API + path, opt);
+  let j = null; try { j = await r.json(); } catch {}
+  return { ok: r.ok, status: r.status, data: j };
+}
+
+// ── polling ──
+function hrSchedule() {
+  clearTimeout(hrTimer);
+  if (document.hidden) return;
+  const ms = hrIsLive(hrRun) ? (hrPanelOpen ? 4000 : 6000) : 30000;
+  hrTimer = setTimeout(hrRefresh, ms);
+}
+async function hrRefresh() {
+  try {
+    if (hrIsLive(hrRun)) {
+      const r = await hrApi('/api/status?run=' + hrRun.runId);
+      if (r.ok && r.data) {
+        const wasLive = hrIsLive(hrRun);
+        hrRun = r.data;
+        hrActive = hrIsLive(hrRun) ? hrRun : null;
+        if (wasLive && !hrIsLive(hrRun)) hrFinished(hrRun);
+      }
+    } else {
+      const r = await hrApi('/api/status');
+      if (r.ok && Array.isArray(r.data)) {
+        hrRecent = r.data;
+        const live = hrRecent.find(hrIsLive);
+        if (live) {
+          const f = await hrApi('/api/status?run=' + live.runId);
+          hrRun = f.ok ? f.data : live;
+          hrActive = hrIsLive(hrRun) ? hrRun : null;
+          if (!hrActive && !hrAcked().includes(hrRun.runId)) hrFinished(hrRun);   // it finished just now
+        } else {
+          hrActive = null;
+          // A run finished while the app was closed → tell them once
+          const last = hrRecent.find(s => s.mode !== 'test');
+          const recentEnough = last && last.finishedAt && (Date.now() - Date.parse(last.finishedAt) < 36 * 3600e3);
+          if (last && HR_FINAL.includes(last.state) && recentEnough && !hrAcked().includes(last.runId)) {
+            if (!hrRun || hrRun.runId !== last.runId) {
+              const f = await hrApi('/api/status?run=' + last.runId);
+              hrRun = f.ok ? f.data : last;
+              hrFinished(hrRun);
+            }
+          } else if (hrRun && !hrIsLive(hrRun) && hrAcked().includes(hrRun.runId)) {
+            hrRun = null;
+          }
+        }
+      }
+    }
+  } catch (e) { /* offline: keep last known state */ }
+  hrRender();
+  hrSchedule();
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) hrRefresh(); else clearTimeout(hrTimer); });
+
+// ── rendering ──
+const HR_SHORT = { queued:'Starting…', starting:'Starting…', loading:'Loading orders…', login:'Logging in…', setup:'Setting up portal…', zeroing:'Clearing portal…', emailing:'Sending report…' };
+function hrFmtTime(sec) { sec = Math.max(0, Math.floor(sec)); const m = Math.floor(sec / 60), s = sec % 60; return m + ':' + String(s).padStart(2, '0'); }
+function hrElapsed(s) {
+  const t0 = Date.parse(s.startedAt || s.requestedAt || s.updatedAt || Date.now());
+  const t1 = s.finishedAt ? Date.parse(s.finishedAt) : Date.now();
+  return (t1 - t0) / 1000;
+}
+function hrRender() {
+  const bar = document.getElementById('hrBar');
+  const s = hrRun;
+  const showBar = s && (hrIsLive(s) || !hrAcked().includes(s.runId));
+  bar.classList.toggle('show', !!showBar);
+  document.body.classList.toggle('hr-has-bar', !!showBar);
+  if (showBar) document.documentElement.style.setProperty('--hr-bar-h', bar.offsetHeight + 'px');
+  if (s) {
+    const test = s.mode === 'test' ? ' (test)' : '';
+    const pct = s.total ? Math.round((s.current / s.total) * 100) : 0;
+    bar.className = (showBar ? 'show' : '') + (s.stale ? ' failed' : HR_FINAL.includes(s.state) ? ' ' + s.state : '');
+    let text, num = '';
+    if (s.stale) text = `${s.store} — lost contact with Herald. Tap`;
+    else if (s.state === 'done') { text = `✓ ${s.store} is in${test} — tap for details`; num = `${s.counts?.entered ?? 0} entered`; }
+    else if (s.state === 'failed') text = `${s.store} didn't finish${test} — tap`;
+    else if (s.state === 'stopped') { text = `${s.store} stopped${test}`; num = `${s.current}/${s.total}`; }
+    else { text = `${s.store}${test} · ${s.state === 'entering' ? 'Entering order' : (HR_SHORT[s.state] || s.step)}`; num = s.state === 'entering' ? `${s.current}/${s.total}` : ''; }
+    document.getElementById('hbText').textContent = text;
+    document.getElementById('hbNum').textContent = num;
+    document.getElementById('hbFill').style.width = (s.state === 'done' ? 100 : pct) + '%';
+  }
+  hrRenderPanel();
+  hrRenderLock();
+  hrRenderHomeBtn();
+}
+function hrRenderPanel() {
+  const s = hrRun; if (!s) return;
+  const $ = id => document.getElementById(id);
+  const live = hrIsLive(s);
+  $('hpStore').textContent = s.store || '—';
+  const when = s.requestedBy ? ` · sent by ${s.requestedBy}` : '';
+  $('hpSub').textContent = `#${s.storeNum || HR_STORE_NUMS[s.store] || ''}${s.mode === 'test' ? ' · TEST RUN' : ''}${when}`;
+  $('hpSpin').style.display = live ? '' : 'none';
+  let step = s.step || '';
+  if (s.state === 'queued') step = 'Starting the cloud runner (about a minute)…';
+  if (s.stale) step = 'Lost contact with Herald. It may have crashed — check the portal.';
+  if (s.state === 'done') step = 'Done — the portal is free for the next order input.';
+  if (s.state === 'failed') step = 'Did not finish: ' + (s.error || 'unknown error');
+  if (s.state === 'stopped') step = s.error || `Stopped after ${s.current} of ${s.total} items`;
+  if (live && hrStopping) step = 'Stopping after the current item…';
+  $('hpStep').textContent = step;
+  $('hpCount').textContent = `${s.current || 0} / ${s.total || 0}`;
+  $('hpTimer').textContent = hrFmtTime(hrElapsed(s));
+  $('hpBar').style.width = (s.state === 'done' ? 100 : (s.total ? (s.current / s.total) * 100 : 0)) + '%';
+  const c = s.counts || {};
+  $('hpEnt').textContent = c.entered || 0; $('hpSkp').textContent = c.skipped || 0;
+  $('hpNf').textContent = c.notFound || 0; $('hpFlg').textContent = c.flagged || 0;
+
+  // Log — same colours as the extension sidebar
+  const log = s.log || [];
+  const wrap = $('hpLog');
+  const atBottom = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 40;
+  if (log.length < hrLogCount || wrap.dataset.run != s.runId) { wrap.innerHTML = ''; hrLogCount = 0; wrap.dataset.run = s.runId; }
+  log.slice(hrLogCount).forEach(l => {
+    const d = document.createElement('div');
+    d.className = 'hp-line ' + (l.kind || 'step');
+    d.textContent = l.msg;
+    wrap.appendChild(d);
+  });
+  hrLogCount = log.length;
+  if (atBottom || live) wrap.scrollTop = wrap.scrollHeight;
+
+  // Items that need a manual look (after it's finished)
+  const iss = s.issues || {};
+  const nf = iss.notFound || [], fl = iss.flagged || [];
+  const box = $('hpIssues');
+  if (!live && (nf.length || fl.length)) {
+    box.style.display = 'block';
+    box.innerHTML = (nf.length ? `<h4>Not found — enter by hand (${nf.length})</h4>` + nf.map(i => `<div>${hrEsc(i.item)} ${hrEsc(i.desc || '')}</div>`).join('') : '')
+      + (fl.length ? `<h4>Flagged — check (${fl.length})</h4>` + fl.map(i => `<div>${hrEsc(i.item)} ×${hrEsc(i.qty)} ${hrEsc(i.desc || '')}</div>`).join('') : '');
+  } else box.style.display = 'none';
+
+  const em = $('hpEmail');
+  const emText = { pending:'✉ Report email will be sent when it finishes', sending:'✉ Sending the report email…', sent:'✓ Report emailed (PDF attached)', failed:'✕ Report email failed — tell Ketan' };
+  if (s.emailStatus && s.emailStatus !== 'off' && emText[s.emailStatus]) { em.style.display = 'block'; em.className = 'hp-email ' + s.emailStatus; em.textContent = emText[s.emailStatus]; }
+  else em.style.display = 'none';
+
+  const act = $('hpActions');
+  const key = (live ? 'live' : 'fin') + (hrStopping ? 's' : '') + (s.stopRequested ? 'r' : '');
+  if (act.dataset.key !== key) {
+    act.dataset.key = key;
+    act.innerHTML = live
+      ? `<button class="hr-btn sec" onclick="hrClosePanel()">Minimize</button><button class="hr-btn red" onclick="hrAskStop()" ${hrStopping || s.stopRequested ? 'disabled' : ''}>${hrStopping || s.stopRequested ? 'Stopping…' : 'Stop'}</button>`
+      : `<button class="hr-btn pri" onclick="hrDismiss()">OK, close</button>`;
+  }
+}
+function hrRenderLock() {
+  const el = document.getElementById('hrLock'); if (!el) return;
+  if (hrActive) {
+    el.style.display = 'block';
+    el.innerHTML = `<b>Herald is entering ${hrEsc(hrActive.store)} right now.</b><br>You can send the next order once it's finished. Tap to watch.`;
+  } else el.style.display = 'none';
+  document.querySelectorAll('.hr-g-send').forEach(b => { b.disabled = !!hrActive || !hrSelectedIds(+b.dataset.gi).length; });
+}
+function hrRenderHomeBtn() {
+  const b = document.getElementById('hrHomeBtn'); if (!b) return;
+  b.innerHTML = 'Send to Portal' + (hrActive ? ` <span class="busy">${hrActive.state === 'entering' ? `${hrActive.current}/${hrActive.total}` : 'running'}</span>` : '');
+}
+
+// Keep the timer ticking while the panel is open
+function hrStartTick() { clearInterval(hrTick); hrTick = setInterval(() => { if (hrRun) document.getElementById('hpTimer').textContent = hrFmtTime(hrElapsed(hrRun)); }, 1000); }
+
+function hrOpenPanel() {
+  if (!hrRun) return;
+  hrPanelOpen = true;
+  document.getElementById('hrPanel').classList.add('open');
+  hrRenderPanel(); hrStartTick();
+  const w = document.getElementById('hpLog'); w.scrollTop = w.scrollHeight;
+  hrSchedule();
+}
+function hrClosePanel() {
+  hrPanelOpen = false; clearInterval(hrTick);
+  document.getElementById('hrPanel').classList.remove('open');
+  hrSchedule();
+}
+function hrDismiss() {
+  if (hrRun) hrAck(hrRun.runId);
+  hrClosePanel(); hrCloseSheet();
+  hrRun = null; hrStopping = false;
+  hrRender();
+  if (document.getElementById('s-portal').classList.contains('active')) hrLoadOrders();
+}
+const hrNotified = new Set();
+function hrFinished(s) {
+  hrStopping = false;
+  if (hrNotified.has(s.runId)) return;   // only once per run per app session
+  hrNotified.add(s.runId);
+  if (navigator.vibrate) try { navigator.vibrate([120, 80, 120]); } catch {}
+  const c = s.counts || {};
+  const title = s.state === 'done' ? 'Order is in ✓' : s.state === 'stopped' ? 'Order input stopped' : 'Order input didn’t finish';
+  const emoji = s.state === 'done' ? '✅' : s.state === 'stopped' ? '⏸️' : '⚠️';
+  const msg = s.state === 'done'
+    ? `Herald finished entering <b>${hrEsc(s.store)}</b>. You can start the next order input in the portal now.`
+    : s.state === 'stopped'
+      ? `<b>${hrEsc(s.store)}</b> was stopped after ${s.current} of ${s.total} items. The portal is free now.`
+      : `<b>${hrEsc(s.store)}</b>: ${hrEsc(s.error || 'something went wrong')}. The portal is free now — tell Ketan.`;
+  hrOpenSheet('finished', `
+    <div class="hs-big">${emoji}</div>
+    <div class="hs-title" style="text-align:center">${title}</div>
+    <div class="hs-sub" style="text-align:center">${msg}</div>
+    <div class="hs-card">
+      <div class="hs-row"><span>Entered</span><b>${c.entered || 0}</b></div>
+      <div class="hs-row"><span>Not found (enter by hand)</span><b>${c.notFound || 0}</b></div>
+      <div class="hs-row"><span>Flagged (check)</span><b>${c.flagged || 0}</b></div>
+      <div class="hs-row"><span>Skipped</span><b>${c.skipped || 0}</b></div>
+      ${s.orderTotal ? `<div class="hs-row"><span>Order total</span><b>${hrEsc(s.orderTotal)}</b></div>` : ''}
+      ${s.emailStatus && s.emailStatus !== 'off' ? `<div class="hs-row"><span>Report email</span><b>${s.emailStatus === 'sent' ? 'Sent ✓' : hrEsc(s.emailStatus)}</b></div>` : ''}
+    </div>
+    <div class="hp-actions" style="margin-top:0">
+      <button class="hr-btn sec" onclick="hrCloseSheet(); hrOpenPanel()">Details</button>
+      <button class="hr-btn pri" onclick="hrDismiss()">OK</button>
+    </div>`);
+}
+
+// ── sheets ──
+function hrOpenSheet(ctx, html) {
+  hrSheetCtx = ctx;
+  const sh = document.getElementById('hrSheet');
+  sh.innerHTML = '<div class="hs-grab"></div>' + html;
+  document.getElementById('hrOverlay').style.display = 'block';
+  requestAnimationFrame(() => sh.classList.add('open'));
+}
+function hrCloseSheet() {
+  document.getElementById('hrSheet').classList.remove('open');
+  document.getElementById('hrOverlay').style.display = 'none';
+  hrSheetCtx = null; hrPin = '';
+}
+function hrPinHtml(btnLabel, onGo) {
+  return `<div class="hs-pin" id="hsPin">${[0,1,2,3].map(() => '<span></span>').join('')}</div>
+    <div class="hs-err" id="hsErr"></div>
+    <div class="hs-pad">${[1,2,3,4,5,6,7,8,9].map(n => `<button onclick="hrPinKey('${n}')">${n}</button>`).join('')}
+      <button onclick="hrCloseSheet()" style="font-family:'Outfit',sans-serif;font-size:14px">Cancel</button><button onclick="hrPinKey('0')">0</button><button onclick="hrPinKey('del')">⌫</button></div>
+    <button class="hr-btn pri" id="hsGo" style="width:100%" onclick="${onGo}" disabled>${btnLabel}</button>`;
+}
+function hrPinKey(k) {
+  if (k === 'del') hrPin = hrPin.slice(0, -1); else if (hrPin.length < 4) hrPin += k;
+  document.querySelectorAll('#hsPin span').forEach((el, i) => { el.textContent = hrPin[i] ? '•' : ''; el.classList.toggle('on', !!hrPin[i]); });
+  const go = document.getElementById('hsGo'); if (go) go.disabled = hrPin.length !== 4;
+  const err = document.getElementById('hsErr'); if (err && hrPin.length) err.textContent = '';
+}
+function hrPinError(msg) {
+  hrPin = ''; hrPinKey('del');
+  const e = document.getElementById('hsErr'); if (e) e.textContent = msg;
+  const go = document.getElementById('hsGo'); if (go) { go.disabled = true; go.textContent = go.dataset.label || go.textContent; }
+}
+
+// ── Stop ──
+function hrAskStop() {
+  hrOpenSheet('stop', `<div class="hs-title">Stop Herald?</div>
+    <div class="hs-sub">It stops after the item it's on. What was already entered stays in the portal, and the report email is still sent.</div>
+    ${hrPinHtml('Stop', 'hrDoStop()')}`);
+}
+async function hrDoStop() {
+  const go = document.getElementById('hsGo'); go.dataset.label = 'Stop'; go.disabled = true; go.textContent = 'Stopping…';
+  try {
+    const r = await hrApi('/api/stop', { pin: hrPin, runId: hrRun.runId });
+    if (r.status === 401) return hrPinError('Wrong PIN');
+    if (!r.ok) return hrPinError((r.data && r.data.error) || 'Could not stop — try again');
+    hrStopping = true; hrCloseSheet(); hrRenderPanel(); showToast('Stopping after the current item');
+  } catch { hrPinError('No connection — try again'); }
+}
+
+// ── Send to Portal screen ──
+function hrOpenPortal() { goTo('s-portal'); hrLoadOrders(); hrRefresh(); }
+function hrParseName(name) {
+  const parts = name.replace('.json', '').split('_');
+  const storeRaw = parts.slice(1, parts.length - 1).join('_');
+  const store = Object.keys(HR_STORE_NUMS).find(s => s.replace(/ /g, '_') === storeRaw) || storeRaw.replace(/_/g, ' ');
+  return { operator: parts[0], store, dateStr: parts[parts.length - 1] };
+}
+// Same grouping as the extension's Drive list ("Load Both Together"): per store, orders within 2 days of each other
+function hrGroup(files) {
+  const byStore = {};
+  files.map(f => ({ ...f, ...hrParseName(f.name) })).forEach(f => { (byStore[f.store] = byStore[f.store] || []).push(f); });
+  const groups = [];
+  Object.entries(byStore).forEach(([store, orders]) => {
+    orders.sort((a, b) => new Date(b.dateStr) - new Date(a.dateStr));
+    const used = new Set();
+    orders.forEach((o, i) => {
+      if (used.has(i)) return;
+      const g = { store, orders: [o] }; used.add(i);
+      orders.forEach((o2, j) => { if (used.has(j)) return; if (Math.abs(new Date(o.dateStr) - new Date(o2.dateStr)) / 86400000 <= 2) { g.orders.push(o2); used.add(j); } });
+      g.orders.sort((a, b) => new Date(a.dateStr) - new Date(b.dateStr));
+      groups.push(g);
+    });
+  });
+  groups.sort((a, b) => Math.max(...b.orders.map(o => new Date(o.dateStr))) - Math.max(...a.orders.map(o => new Date(o.dateStr))));
+  return groups;
+}
+function hrDateLabel(g) {
+  const d = [...new Set(g.orders.map(o => o.dateStr))].sort();
+  return d.length > 1 ? `${fmtDate(d[0])} – ${fmtDate(d[d.length - 1])}` : fmtDate(d[0]);
+}
+function hrSelectedIds(gi) { const g = hrGroups[gi]; return g ? g.orders.filter(o => hrSel[o.id] !== false).map(o => o.id) : []; }
+function hrSentRun(g) {
+  const key = g.orders.map(o => o.id).sort().join(',');
+  return hrRecent.find(s => s.state === 'done' && s.mode !== 'test' && s.filesKey && (s.filesKey === key || g.orders.every(o => s.filesKey.split(',').includes(o.id))));
+}
+async function hrLoadOrders() {
+  const list = document.getElementById('hrList');
+  list.innerHTML = '<div class="empty"><div style="font-size:28px;opacity:0.3">☁</div><p>Loading orders from Drive…</p></div>';
+  try {
+    const [res] = await Promise.all([fetch(APPS_SCRIPT_URL + '?action=list').then(r => r.json()), hrApi('/api/status').then(r => { if (r.ok && Array.isArray(r.data)) hrRecent = r.data; }).catch(() => {})]);
+    if (!res.success) throw new Error('Drive error');
+    const files = (res.files || []).filter(f => f.name.endsWith('.json') && !f.name.startsWith('CATALOG_'));
+    hrGroups = hrGroup(files);
+    hrRenderGroups();
+    hrBackfill(hrGroups.slice(0, 4));
+  } catch (e) {
+    list.innerHTML = '<div class="empty"><div style="font-size:28px;opacity:0.3">☁</div><p>Could not load orders from Drive.<br>Check your connection.</p></div>';
+  }
+}
+function hrGroupCard(g, gi) {
+  const sent = hrSentRun(g);
+  const n = g.orders.length;
+  const rows = g.orders.map(o => `<div class="hr-o ${hrSel[o.id] !== false ? 'on' : ''}" onclick="hrToggle('${o.id}', ${gi})">
+      <span class="ck">✓</span>
+      <div style="flex:1"><div class="op">${hrEsc(o.operator)}</div><div class="mt">${fmtDate(o.dateStr)}${o.itemCount != null ? ' · ' + o.itemCount + ' items' : ''}</div></div>
+    </div>`).join('');
+  const sel = hrSelectedIds(gi).length;
+  const label = sel === 0 ? 'Pick an order' : sel === n && n === 2 ? 'Send both to Portal' : sel === n && n > 2 ? `Send all ${n} to Portal` : sel === 1 && n > 1 ? 'Send 1 order to Portal' : 'Send to Portal';
+  return `<div class="hr-group ${sent ? 'sent' : ''}" id="hrg-${gi}">
+    <div class="hr-g-head"><div><div class="hr-g-store">${hrEsc(g.store)}</div>
+      <div class="hr-g-sub" id="hrg-sub-${gi}">#${HR_STORE_NUMS[g.store] || ''} · ${hrDateLabel(g)}${g.total != null ? ' · ' + g.total + ' items' : ''}</div></div>
+      ${sent ? `<span class="hr-g-badge">Sent ✓ ${sent.finishedAt ? new Date(sent.finishedAt).toLocaleDateString('en-CA', { month:'short', day:'numeric' }) : ''}</span>` : ''}</div>
+    ${rows}
+    <button class="hr-g-send" data-gi="${gi}" onclick="hrConfirm(${gi})" ${hrActive || !sel ? 'disabled' : ''}>${label}</button>
+  </div>`;
+}
+function hrRenderGroups() {
+  const list = document.getElementById('hrList');
+  if (!hrGroups.length) { list.innerHTML = '<div class="empty"><div style="font-size:28px;opacity:0.3">☁</div><p>No orders in Drive yet.<br>Upload an order first.</p></div>'; return; }
+  const recent = hrGroups.slice(0, 4), older = hrGroups.slice(4);
+  list.innerHTML = recent.map((g, i) => hrGroupCard(g, i)).join('')
+    + (older.length ? (hrShowOlder ? older.map((g, i) => hrGroupCard(g, 4 + i)).join('') : '')
+      + `<div class="hr-older" onclick="hrShowOlder=!hrShowOlder; hrRenderGroups(); if(hrShowOlder) hrBackfill(hrGroups.slice(4))">${hrShowOlder ? '▴ Hide older orders' : `▾ Show ${older.length} older`}</div>` : '');
+  hrRenderLock();
+}
+function hrToggle(id, gi) { hrSel[id] = hrSel[id] === false; hrRenderGroups(); }
+async function hrFetchOrder(id) {
+  const r = await fetch(APPS_SCRIPT_URL + '?action=get&id=' + encodeURIComponent(id)).then(r => r.json());
+  if (!r.success || !r.content) throw new Error('Bad response');
+  return r.content;
+}
+async function hrBackfill(groups) {
+  await Promise.all(groups.map(async g => {
+    try {
+      const contents = await Promise.all(g.orders.map(o => o.content ? o.content : hrFetchOrder(o.id)));
+      contents.forEach((c, i) => { g.orders[i].content = c; g.orders[i].itemCount = (c.items || []).length; });
+      const m = new Set(); contents.forEach(c => (c.items || []).forEach(i => m.add(String(i.item))));
+      g.total = m.size;
+    } catch {}
+  }));
+  hrRenderGroups();
+}
+function hrConfirm(gi) {
+  if (hrActive) { showToast('Wait until the current order is finished'); return; }
+  const g = hrGroups[gi];
+  const chosen = g.orders.filter(o => hrSel[o.id] !== false);
+  if (!chosen.length) return;
+  let total = null;
+  if (chosen.every(o => o.content)) { const m = new Set(); chosen.forEach(o => o.content.items.forEach(i => m.add(String(i.item)))); total = m.size; }
+  const sent = hrSentRun({ orders: chosen });
+  hrSheetCtx = null;
+  hrOpenSheet('send', `<div class="hs-title">Send to Portal?</div>
+    <div class="hs-sub">Herald will enter this order into the portal by itself. You can close the app — it keeps going.</div>
+    <div class="hs-card">
+      <div class="hs-row"><span>Store</span><b>${hrEsc(g.store)} #${HR_STORE_NUMS[g.store] || ''}</b></div>
+      ${chosen.map(o => `<div class="hs-row"><span>${hrEsc(o.operator)} · ${fmtDate(o.dateStr)}</span><b>${o.itemCount != null ? o.itemCount + ' items' : ''}</b></div>`).join('')}
+      ${total != null ? `<div class="hs-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:8px"><span>Total to enter</span><b>${total} items</b></div>` : ''}
+    </div>
+    ${sent ? `<div class="hs-note" style="color:var(--red);font-weight:700">These orders were already sent on ${new Date(sent.finishedAt).toLocaleString('en-CA', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })}. Sending again will clear the portal and enter them again.</div>` : ''}
+    <div class="hs-note">It first clears what's already in the portal for this store, then enters the order. The report email with the PDF is sent when it's done. Enter the PIN to start.</div>
+    ${hrPinHtml(sent ? 'Send again' : 'Send to Portal', `hrSend(${gi}, ${sent ? 'true' : 'false'})`)}`);
+}
+async function hrSend(gi, force) {
+  const g = hrGroups[gi];
+  const ids = hrSelectedIds(gi);
+  const go = document.getElementById('hsGo'); go.dataset.label = go.textContent; go.disabled = true; go.textContent = 'Starting…';
+  try {
+    const r = await hrApi('/api/start', { pin: hrPin, store: g.store, fileIds: ids, force: !!force, who: (typeof operator !== 'undefined' && operator) || null });
+    if (r.status === 401) return hrPinError('Wrong PIN');
+    if (r.status === 409 && r.data && r.data.duplicate) {
+      const pin = hrPin;
+      hrConfirm(gi); hrPin = pin; hrPinKey('');   // re-open with the "already sent" warning, keep the PIN
+      return;
+    }
+    if (r.status === 409) { hrCloseSheet(); showToast('Another order is being entered right now'); await hrRefresh(); hrOpenPanel(); return; }
+    if (!r.ok) return hrPinError((r.data && r.data.error) || 'Could not start — try again');
+    hrCloseSheet();
+    hrStopping = false;
+    hrRun = { runId: r.data.runId, state: 'queued', step: 'Starting', store: g.store, storeNum: HR_STORE_NUMS[g.store], mode: 'full', current: 0, total: 0, counts: {}, log: [], requestedAt: new Date().toISOString() };
+    hrActive = hrRun;
+    hrRender(); hrOpenPanel();
+    setTimeout(hrRefresh, 2500);
+  } catch (e) { hrPinError('No connection — try again'); }
+}
+
+// Start watching as soon as the app loads
+hrRefresh();
+</script>
