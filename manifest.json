@@ -1,11 +1,11 @@
 {
-  "name": "Project: Herald",
+  "name": "Herald",
   "short_name": "Herald",
   "description": "Pet Valu Franchise Order System",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#060910",
+  "background_color": "#f7fbf8",
+  "theme_color": "#f1f8f3",
   "orientation": "portrait",
   "icons": [
     {
