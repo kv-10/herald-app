@@ -33,3 +33,9 @@ button,input{font-family:Inter,sans-serif}button{touch-action:manipulation}butto
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 .hp-progress-card{background:var(--forest-surface);border:1px solid var(--border);border-radius:23px;padding:16px 18px 2px;margin:0 0 18px;flex-shrink:0}.hp-progress-card .hp-label{align-items:baseline}.hp-progress-card #hpCount{font-size:39px!important;line-height:1.2}.hp-progress-card .hp-bar-wrap{margin-top:18px!important}.hf-entry-message{font-size:12px;margin-bottom:3px!important;min-height:0}.hf-entry-message:empty{display:none}
 @media(max-height:730px){.hp-progress-card{padding:9px 13px 0;margin-bottom:10px}.hp-progress-card #hpCount{font-size:30px!important}.hp-progress-card .hp-bar-wrap{margin:9px 0 13px!important}.hf-entry-message{font-size:11px}.hp-stats{margin-bottom:9px!important}}
+
+/* Identity first, then greeting and store choice. */
+#s-store{padding:20px 23px 0!important;justify-content:flex-start!important;overflow-y:auto;gap:0}
+.hf-who{margin:auto 0;width:100%;padding:36px 0 70px}.hf-who .hf-greeting{font-size:36px;max-width:270px;margin-bottom:30px}.hf-who .hf-operators{flex-direction:column;gap:14px;margin:0}.hf-who .hf-operators button{min-height:76px;text-align:left;padding:22px;font:500 23px 'Space Grotesk',sans-serif;color:var(--accent);border-radius:20px}.hf-who .hf-operators button:after{content:'›';float:right;color:var(--muted)}
+#s-store .hf-home-nav{margin-top:auto}
+@media(max-height:730px){#s-store{padding-top:10px!important}.hf-who{padding-bottom:35px}.hf-who .hf-greeting{font-size:32px}}

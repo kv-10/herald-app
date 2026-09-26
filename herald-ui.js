@@ -37,18 +37,17 @@
     if (context !== entryContext) { entryContext=context; const el=document.querySelector("#s-entry [data-hf-message]"); if(el)el.textContent=pick(context); }
   }
   function screenMessage(id) {
-    const context = {'s-operator':'home','s-store':'home','s-entry':items.length?'entry':'empty','s-review':'review'}[id];
+    const context = {'s-store':'home','s-entry':items.length?'entry':'empty','s-review':'review'}[id];
     const el = document.querySelector('#'+id+' [data-hf-message]');
     if (el && context) el.textContent=pick(context);
     if (id==='s-entry') entryContext=context;
-    if (id==='s-operator') home();
+    if (id==='s-store') home();
   }
   function home() {
     if (!operator) {try{operator=localStorage.getItem('herald_operator')||'Nipun';}catch{operator='Nipun';}}
     if (!['Nipun','Shruti'].includes(operator)) operator='Nipun';
     const name=operator==='Nipun'?'Papa':'Mumma';
     document.getElementById('hfGreeting').textContent='Namaste, '+name+'.';
-    document.querySelectorAll('[data-hf-operator]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.hfOperator===operator));
     document.getElementById('hfDate').textContent=new Date().toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'});
     document.getElementById('hfHomeStores').innerHTML=[['Lakeshore Rd','2087'],['Lambton Mall','2356'],['Corunna','2372'],['London','2412']].map(([name,num])=>{
       const n=loadDraft(name).length;
@@ -56,7 +55,7 @@
     }).join('');
     document.querySelectorAll('[data-hf-store]').forEach(b=>b.onclick=()=>selectStore(b.dataset.hfStore));
   }
-  function choose(name) {operator=name;try{localStorage.setItem('herald_operator',name);}catch{}home();screenMessage('s-operator');}
+  function choose(name) {operator=name;try{localStorage.setItem('herald_operator',name);}catch{}goTo('s-store');}
   // Decorative text symbols are rendered as a consistent, local SVG icon set.
   // Limit this to UI text nodes, never inputs, scripts, payloads, or saved orders.
   const glyphs={'⚠':'warning','🔍':'search','☁':'cloud','◷':'clock','ⓘ':'info','✅':'check','✓':'check','✕':'close','⏸':'pause','✉':'mail'};
