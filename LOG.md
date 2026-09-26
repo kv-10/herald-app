@@ -2,6 +2,30 @@
 
 Newest entry on top. Owner: Ketan.
 
+## 2026-09-26 02:45 ET — Claude — v3.2.0: Send to Portal is live
+- Branch / commit: main (this commit)
+- What:
+  - `vercel.json` (new on main): Vercel runs `node portal/build.mjs` and serves `dist/`.
+  - `portal/build.mjs` (new): writes `dist/index.html` from main's **unchanged** `index.html`:
+    - replaces `<!-- herald-portal-entry -->` with the Send to Portal button
+    - inserts the Send to Portal module plus the final `herald-theme.css` link before `</body>` (same as the beta build)
+    - stamps the version from `version.json` into `APP_VERSION`, the version badge and all `?v=` asset links
+    - copies the png/json/svg/css/js assets
+    - fails the build if anything expected is missing; Vercel then keeps the previous live version
+  - The module is fetched from **beta @ 042dab6** (`beta/portal-module.html`, Codex's latest) and must match SHA-256 `7b806f28…d5549`. If `portal/portal-module.html` is ever added to main, it's used instead.
+  - `version.json`: v3.2.0.
+- Why: Ketan approved going live so Mumma and Papa can use Send to Portal on 2026-09-26.
+- Effect:
+  - The build output is byte-identical whether the module is local or fetched.
+  - Full phone test (390×844, fake backend) on the production build passed with no reload loop: parent → stores → Send to Portal, wrong PIN, live panel, minimize bar, reopen mid-run, finished-while-closed, details, stop.
+  - Existing phones auto-update: their APP_VERSION v3.1.2 ≠ version.json v3.2.0, so they reload.
+  - The rest of the app is unchanged.
+- Risks / follow-ups:
+  - **Why this shape:** Claude edits the repo through the GitHub connector, which can't safely rewrite the 280 KB `index.html`. Codex (local git) can vendor the module into main: `git show 042dab6:beta/portal-module.html > portal/portal-module.html`, then commit and remove the fetch if you like.
+  - **Releasing from now on:** bump `version.json` only. The build stamps it into the page. `APP_VERSION` in `index.html` may lag, and that's fine.
+  - **Module changes** made on beta need the new commit + SHA-256 in `portal/build.mjs` (or the vendored file) to reach the live app.
+  - The beta branch keeps its own build; `index.html` on beta must still match main's.
+
 ## 2026-09-25 21:59 ET — Codex — Clean up colon replacement copy
 - Branch / commit: main (this commit)
 - What: `index.html`: missing catalog prices/brand/size fallback to n/a, sentence punctuation in entry/catalog/startup, cleaner email subject separators. `version.json` and APP_VERSION prepared as v3.1.2. Beta also updates `beta/portal-module.html` status, confirmation, issue and error copy and `beta/build.mjs` asset version.
@@ -22,4 +46,3 @@ Newest entry on top. Owner: Ketan.
 - Why: Ketan approved Forest Petal and explicitly requested deployment to every screen; email-report notices stay plain English.
 - Effect: 68 UI states captured in isolated Chromium, including 390px, 360px and desktop layouts. Checked entry, cases, edits, draft reload, JSON export, underlying Shruti identity, mocked wrong PIN, scrollable small-phone sheet, message cycles and stale-run copy. Beta build and JS syntax checks passed. No real portal run, Drive write or email was performed.
 - Risks / follow-ups: Cross-lane presentation hooks touch navigation/operator selection and beta message rendering. Existing payload identities, order logic and portal controls retained; Claude can review these hooks. The portal feature remains beta-only and still needs its first supervised real order. Main and beta share identical index/theme/message/brand assets. Installed PWA icons may refresh later than the page. Release authorized by Ketan's request to deploy this aesthetic.
-

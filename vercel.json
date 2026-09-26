@@ -1,0 +1,5 @@
+{
+  "buildCommand": "node portal/build.mjs",
+  "outputDirectory": "dist",
+  "installCommand": ""
+}
