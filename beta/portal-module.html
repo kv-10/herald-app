@@ -246,9 +246,9 @@ function hrRender() {
     const pct = s.total ? Math.round((s.current / s.total) * 100) : 0;
     bar.className = (showBar ? 'show' : '') + (s.stale ? ' failed' : HR_FINAL.includes(s.state) ? ' ' + s.state : '');
     let text, num = '';
-    if (s.stale) text = `${s.store} : lost contact with Herald. Tap`;
-    else if (s.state === 'done') { text = `✓ ${s.store} is in${test} : tap for details`; num = `${s.counts?.entered ?? 0} entered`; }
-    else if (s.state === 'failed') text = `${s.store} didn't finish${test} : tap`;
+    if (s.stale) text = `${s.store}. Lost contact with Herald. Tap for details.`;
+    else if (s.state === 'done') { text = `✓ ${s.store} is in${test}. Tap for details.`; num = `${s.counts?.entered ?? 0} entered`; }
+    else if (s.state === 'failed') text = `${s.store} didn't finish${test}. Tap for details.`;
     else if (s.state === 'stopped') { text = `${s.store} stopped${test}`; num = `${s.current}/${s.total}`; }
     else { text = `${s.store}${test} · ${s.state === 'entering' ? 'Entering order' : (HR_SHORT[s.state] || s.step)}`; num = s.state === 'entering' ? `${s.current}/${s.total}` : ''; }
     document.getElementById('hbText').textContent = text;
@@ -270,8 +270,8 @@ function hrRenderPanel() {
   $('hpSpin').style.display = live ? '' : 'none';
   let step = s.step || '';
   if (s.state === 'queued') step = 'Starting the cloud runner (about a minute)…';
-  if (s.stale) step = 'Lost contact with Herald. It may have crashed : check the portal.';
-  if (s.state === 'done') step = 'Done : the portal is free for the next order input.';
+  if (s.stale) step = 'Lost contact with Herald. It may have crashed. Check the portal.';
+  if (s.state === 'done') step = 'Done. The portal is free for the next order input.';
   if (s.state === 'failed') step = 'Did not finish: ' + (s.error || 'unknown error');
   if (s.state === 'stopped') step = s.error || `Stopped after ${s.current} of ${s.total} items`;
   if (live && hrStopping) step = 'Stopping after the current item…';
@@ -303,8 +303,8 @@ function hrRenderPanel() {
   const box = $('hpIssues');
   if (!live && (nf.length || fl.length)) {
     box.style.display = 'block';
-    box.innerHTML = (nf.length ? `<h4>Not found : enter by hand (${nf.length})</h4>` + nf.map(i => `<div>${hrEsc(i.item)} ${hrEsc(i.desc || '')}</div>`).join('') : '')
-      + (fl.length ? `<h4>Flagged : check (${fl.length})</h4>` + fl.map(i => `<div>${hrEsc(i.item)} ×${hrEsc(i.qty)} ${hrEsc(i.desc || '')}</div>`).join('') : '');
+    box.innerHTML = (nf.length ? `<h4>Not found. Enter by hand (${nf.length})</h4>` + nf.map(i => `<div>${hrEsc(i.item)} ${hrEsc(i.desc || '')}</div>`).join('') : '')
+      + (fl.length ? `<h4>Flagged. Check (${fl.length})</h4>` + fl.map(i => `<div>${hrEsc(i.item)} ×${hrEsc(i.qty)} ${hrEsc(i.desc || '')}</div>`).join('') : '');
   } else box.style.display = 'none';
 
   const em = $('hpEmail');
@@ -372,7 +372,7 @@ function hrFinished(s) {
     ? `Herald finished entering <b>${hrEsc(s.store)}</b>. You can start the next order input in the portal now.`
     : s.state === 'stopped'
       ? `<b>${hrEsc(s.store)}</b> was stopped after ${s.current} of ${s.total} items. The portal is free now.`
-      : `<b>${hrEsc(s.store)}</b>: ${hrEsc(s.error || 'something went wrong')}. The portal is free now : tell Ketan.`;
+      : `<b>${hrEsc(s.store)}</b>: ${hrEsc(s.error || 'something went wrong')}. The portal is free now. Tell Ketan.`;
   hrOpenSheet('finished', `
     <div class="hs-big">${emoji}</div>
     <div class="hs-title" style="text-align:center">${title}</div>
@@ -434,9 +434,9 @@ async function hrDoStop() {
   try {
     const r = await hrApi('/api/stop', { pin: hrPin, runId: hrRun.runId });
     if (r.status === 401) return hrPinError('Wrong PIN');
-    if (!r.ok) return hrPinError((r.data && r.data.error) || 'Could not stop : try again');
+    if (!r.ok) return hrPinError((r.data && r.data.error) || 'Could not stop. Try again.');
     hrStopping = true; hrCloseSheet(); hrRenderPanel(); showToast('Stopping after the current item');
-  } catch { hrPinError('No connection : try again'); }
+  } catch { hrPinError('No connection. Try again.'); }
 }
 
 // ── Send to Portal screen ──
@@ -542,7 +542,7 @@ function hrConfirm(gi) {
   const sent = hrSentRun({ orders: chosen });
   hrSheetCtx = null;
   hrOpenSheet('send', `<div class="hs-title">Send to Portal?</div>
-    <div class="hs-sub">Herald will enter this order into the portal by itself. You can close the app : it keeps going.</div>
+    <div class="hs-sub">Herald will enter this order into the portal by itself. You can close the app. It keeps going.</div>
     <div class="hs-card">
       <div class="hs-row"><span>Store</span><b>${hrEsc(g.store)} #${HR_STORE_NUMS[g.store] || ''}</b></div>
       ${chosen.map(o => `<div class="hs-row"><span>${hrEsc(o.operator === 'Nipun' ? 'Papa' : o.operator === 'Shruti' ? 'Mumma' : o.operator)} · ${fmtDate(o.dateStr)}</span><b>${o.itemCount != null ? o.itemCount + ' items' : ''}</b></div>`).join('')}
@@ -565,14 +565,14 @@ async function hrSend(gi, force) {
       return;
     }
     if (r.status === 409) { hrCloseSheet(); showToast('Another order is being entered right now'); await hrRefresh(); hrOpenPanel(); return; }
-    if (!r.ok) return hrPinError((r.data && r.data.error) || 'Could not start : try again');
+    if (!r.ok) return hrPinError((r.data && r.data.error) || 'Could not start. Try again.');
     hrCloseSheet();
     hrStopping = false;
     hrRun = { runId: r.data.runId, state: 'queued', step: 'Starting', store: g.store, storeNum: HR_STORE_NUMS[g.store], mode: 'full', current: 0, total: 0, counts: {}, log: [], requestedAt: new Date().toISOString() };
     hrActive = hrRun;
     hrRender(); hrOpenPanel();
     setTimeout(hrRefresh, 2500);
-  } catch (e) { hrPinError('No connection : try again'); }
+  } catch (e) { hrPinError('No connection. Try again.'); }
 }
 
 // Start watching as soon as the app loads
