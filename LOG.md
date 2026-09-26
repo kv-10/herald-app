@@ -2,6 +2,13 @@
 
 Newest entry on top. Owner: Ketan.
 
+## 2026-09-25 21:59 ET — Codex — Clean up colon replacement copy
+- Branch / commit: main (this commit)
+- What: `index.html`: missing catalog prices/brand/size fallback to n/a, sentence punctuation in entry/catalog/startup, cleaner email subject separators. `version.json` and APP_VERSION prepared as v3.1.2. Beta also updates `beta/portal-module.html` status, confirmation, issue and error copy and `beta/build.mjs` asset version.
+- Why: Ketan reported bare colons in catalog fields and awkward colon-separated sentences.
+- Effect: Cosmetic strings only. Existing missing-size card visibility, price formatting conditions and all order/portal logic retained. Beta build and diff checks passed; inspected mocked missing-field popup and completion text.
+- Risks / follow-ups: Ready for deployment approval. No live portal, email or order data touched.
+
 ## 2026-09-25 20:11 ET — Codex — Separate parent selection from store selection
 - Branch / commit: main (this commit)
 - What: `index.html`: identity-only opening screen, separate personalized store screen and corrected Back destinations. `herald-ui.js`: parent choice navigates to store selection, with greeting and contextual blurb there. `herald-theme.css`: two-screen layouts. `version.json` and APP_VERSION: v3.1.1. Beta also updates `beta/build.mjs` asset version and `beta/portal-module.html` Back destination.

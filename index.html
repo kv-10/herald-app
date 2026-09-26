@@ -562,7 +562,7 @@ body::after {
 .sanity-btn-danger { background:var(--redd); color:var(--red); border:1px solid rgba(255,94,122,0.3); border-radius:13px; flex:1; padding:15px; font-family:'Inter',sans-serif; font-size:14px; font-weight:700; cursor:pointer; }
 .sanity-btn-danger:active { opacity:0.8; }
 </style>
-<link rel="stylesheet" href="herald-theme.css?v=3.1.1">
+<link rel="stylesheet" href="herald-theme.css?v=3.1.2">
 <link rel="icon" href="herald-logo.svg" type="image/svg+xml">
 </head>
 <body>
@@ -608,7 +608,7 @@ body::after {
     <h1 class="hf-greeting">Who's ordering today?</h1>
     <div class="hf-operators"><button data-hf-operator="Nipun" aria-label="Papa">Papa</button><button data-hf-operator="Shruti" aria-label="Mumma">Mumma</button></div>
   </div>
-  <div class="hf-version" id="appVersionBadge">v3.1.1</div>
+  <div class="hf-version" id="appVersionBadge">v3.1.2</div>
 </div>
 
 <div id="s-store" class="screen">
@@ -1319,7 +1319,7 @@ function cancelEdit() {
 function refreshEditDisp() {
   const lbl = document.getElementById('eLabel');
   const inp = document.getElementById('eInput');
-  lbl.textContent = 'Editing : ' + LABELS[editField];
+  lbl.textContent = 'Editing ' + LABELS[editField];
   lbl.className   = 'e-field-label edit-lbl';
   inp.className   = 'edit-mode' + (editField==='qoh' ? ' qoh-mode' : '');
   inp.placeholder = 'enter value';
@@ -1376,7 +1376,7 @@ function refreshReview() {
 function renderEntryItems() {
   window.HeraldUI?.entryMessage();
   const inner = document.getElementById('items-inner');
-  if (!items.length) { inner.innerHTML='<div class="no-items-msg">No items yet : start entering below</div>'; return; }
+  if (!items.length) { inner.innerHTML='<div class="no-items-msg">No items yet. Start entering below.</div>'; return; }
   inner.innerHTML = items.map((it,idx) => {
     const ef = (editIdx===idx && editField==='item')  ? ' editing'      : '';
     const eo = (editIdx===idx && editField==='order') ? ' editing'      : '';
@@ -1694,7 +1694,7 @@ function dlPastCSV() {
 // ── EMAIL ──
 function sendEmail() {
   const ord     = items.filter(i => i.itemNum);
-  const subject = `Pet Valu Order : ${operator} : ${store} : ${new Date().toLocaleDateString('en-CA')}`;
+  const subject = `Pet Valu Order: ${operator}, ${store}, ${new Date().toLocaleDateString('en-CA')}`;
   const body    = JSON.stringify({store, date: new Date().toLocaleDateString('en-CA'), items: ord.map(i => ({item: i.itemNum, order: i.cases ? -i.order : i.order, qoh: i.qoh}))}, null, 2);
   if (navigator.share) {
     navigator.share({ title: subject, text: body }).catch(() => {});
@@ -1763,7 +1763,7 @@ function jumpToPastRow(idx) {
 // ── PAST ORDER EMAIL ──
 function sendPastEmail() {
   if (!pastOrder) return;
-  const subject = `Pet Valu Order : ${pastOrder.operator||''} : ${pastOrder.store} : ${pastOrder.isoDate}`.trim().replace(':  :',':');
+  const subject = `Pet Valu Order: ${pastOrder.operator||''}, ${pastOrder.store}, ${pastOrder.isoDate}`.trim().replace(': ,',':');
   const body = JSON.stringify({store:pastOrder.store, date:pastOrder.isoDate, items:pastOrder.items.map(i=>({item:i.itemNum,order:(i.cases&&i.order>0)?-i.order:i.order,qoh:i.qoh}))}, null, 2);
   if (navigator.share) {
     navigator.share({ title: subject, text: body }).catch(()=>{});
@@ -1900,18 +1900,18 @@ function showCatalogPopup(itemNum) {
   document.getElementById('catPopExpanded').textContent = rawChanged ? displayDesc : '';
 
   // Prices : always shown
-  const fmt = n => (n != null && n !== 0) ? '$' + n.toFixed(2) : ':';
+  const fmt = n => (n != null && n !== 0) ? '$' + n.toFixed(2) : 'n/a';
   document.getElementById('catPopWholesale').textContent = fmt(info.wholesale ?? null);
   document.getElementById('catPopRetail').textContent    = fmt(info.retail ?? null);
 
   // Brand + multiple
-  document.getElementById('catPopBrand').textContent    = info.brand || ':';
+  document.getElementById('catPopBrand').textContent    = info.brand || 'n/a';
   document.getElementById('catPopMultiple').textContent = '×' + info.multiple;
 
   // Size card
   const sz = parseSize(info.desc);
   const sizeCard = document.getElementById('catPopSizeCard');
-  if (sizeCard) { document.getElementById('catPopSize').textContent = sz || ':'; sizeCard.style.display = sz ? '' : 'none'; }
+  if (sizeCard) { document.getElementById('catPopSize').textContent = sz || 'n/a'; sizeCard.style.display = sz ? '' : 'none'; }
 
   // Sub item card : shows item this one is substituted by
   _catPopCurrentSub = info.sub || null;
@@ -1985,7 +1985,7 @@ function renderCatalogResults(q) {
 
   if (!catalogLoaded) {
     status.textContent = '';
-    area.innerHTML = '<div class="cat-empty-state"><div class="icon">⚠️</div><div>Catalog not loaded : check your connection and reopen the app</div></div>';
+    area.innerHTML = '<div class="cat-empty-state"><div class="icon">⚠️</div><div>Catalog not loaded. Check your connection and reopen the app.</div></div>';
     return;
   }
 
@@ -2039,7 +2039,7 @@ function renderCatalogResults(q) {
 
   status.textContent = results.length < CAT_MAX_RESULTS
     ? results.length + ' result' + (results.length !== 1 ? 's' : '')
-    : 'Top ' + CAT_MAX_RESULTS + ' : keep typing to narrow down';
+    : 'Top ' + CAT_MAX_RESULTS + '. Keep typing to narrow down.';
 
   const hl = (str, pat) => pat
     ? str.replace(new RegExp('(' + pat + ')', 'gi'), '<span style="color:var(--accent);background:rgba(20,83,45,0.1);border-radius:3px;padding:0 2px;font-weight:700">$1</span>')
@@ -2116,7 +2116,7 @@ function setOverlayCasesMode(val) {
 refreshDisp(); refreshNext(); refreshReview();
 
 // ── STARTUP SEQUENCE ──
-const APP_VERSION = 'v3.1.1';
+const APP_VERSION = 'v3.1.2';
 const VERSION_URL = 'https://project-herald.vercel.app/version.json';
 
 function suIcon(id, cls, content) {
@@ -2184,7 +2184,7 @@ async function runStartup() {
   } catch(e) {
     await sleep(600);
     suIcon(2, 'err', '!');
-    suSub(2, 'Could not check : continuing');
+    suSub(2, 'Could not check. Continuing.');
   }
 
   // Step 3: Ready
@@ -2569,7 +2569,7 @@ function sanityAction(btn) {
   }
 }
 </script>
-<script src="herald-messages.js?v=3.1.1"></script>
-<script src="herald-ui.js?v=3.1.1"></script>
+<script src="herald-messages.js?v=3.1.2"></script>
+<script src="herald-ui.js?v=3.1.2"></script>
 </body>
 </html>
