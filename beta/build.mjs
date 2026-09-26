@@ -6,7 +6,7 @@ patch('<!-- herald-portal-entry -->','<button class="hr-home-send" id="hrHomeBtn
 patch('    const latest = data.version;',"    const latest = location.hostname === 'project-herald.vercel.app' ? data.version : APP_VERSION;");
 patch('runStartup();\n',"if (location.hostname !== 'project-herald.vercel.app') { const b = document.getElementById('appVersionBadge'); if (b) b.textContent = APP_VERSION + ' · BETA'; }\nrunStartup();\n");
 const mod=fs.readFileSync('beta/portal-module.html','utf8');
-patch('</body>',mod+'\n<link rel="stylesheet" href="herald-theme.css?v=3.1.0">\n</body>');
+patch('</body>',mod+'\n<link rel="stylesheet" href="herald-theme.css?v=3.1.1">\n</body>');
 
 fs.rmSync('dist',{recursive:true,force:true});fs.mkdirSync('dist');fs.writeFileSync('dist/index.html',s);
 for(const f of fs.readdirSync('.'))if(/\.(png|json|ico|webmanifest|svg|css|js)$/.test(f)&&f!=='vercel.json')fs.copyFileSync(f,'dist/'+f);

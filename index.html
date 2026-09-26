@@ -562,7 +562,7 @@ body::after {
 .sanity-btn-danger { background:var(--redd); color:var(--red); border:1px solid rgba(255,94,122,0.3); border-radius:13px; flex:1; padding:15px; font-family:'Inter',sans-serif; font-size:14px; font-weight:700; cursor:pointer; }
 .sanity-btn-danger:active { opacity:0.8; }
 </style>
-<link rel="stylesheet" href="herald-theme.css?v=3.1.0">
+<link rel="stylesheet" href="herald-theme.css?v=3.1.1">
 <link rel="icon" href="herald-logo.svg" type="image/svg+xml">
 </head>
 <body>
@@ -603,35 +603,29 @@ body::after {
 </div>
 
 <div id="s-operator" class="screen active">
-  <header class="hf-home-head"><div class="hf-brand"><img class="hf-logo" src="herald-logo.svg" alt="">Herald</div><time id="hfDate"></time></header>
-  <div class="hf-caption">Who's ordering?</div>
-  <div class="hf-operators"><button data-hf-operator="Nipun" aria-pressed="true">Papa</button><button data-hf-operator="Shruti" aria-pressed="false">Mumma</button></div>
-  <h1 class="hf-greeting" id="hfGreeting">Namaste, Papa.</h1>
-  <p class="hf-message" data-hf-message>Aaj kis store ka order karna hai?</p>
-  <div class="hf-home-grid" id="hfHomeStores"></div>
-  <!-- herald-portal-entry -->
-  <nav class="hf-home-nav" aria-label="Home navigation"><button onclick="goTo('s-history'); renderHist()">Past orders</button><button onclick="goTo('s-catalog')">Browse catalog</button></nav>
-  <div class="hf-version" id="appVersionBadge">v3.1.0</div>
+  <header class="hf-home-head"><div class="hf-brand"><img class="hf-logo" src="herald-logo.svg" alt="">Herald</div></header>
+  <div class="hf-who">
+    <h1 class="hf-greeting">Who's ordering today?</h1>
+    <div class="hf-operators"><button data-hf-operator="Nipun" aria-label="Papa">Papa</button><button data-hf-operator="Shruti" aria-label="Mumma">Mumma</button></div>
+  </div>
+  <div class="hf-version" id="appVersionBadge">v3.1.1</div>
 </div>
 
-<div id="s-store" class="screen" style="position:relative;justify-content:center;padding:0 28px 48px">
-  <div style="position:absolute;top:14px;left:20px;z-index:2">
-    <button class="back-btn" onclick="goTo('s-operator')">
-      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-      Back
-    </button>
-  </div>
-  <div style="width:100%">
-    <div class="store-heading" style="margin-bottom:28px;text-align:center">Which store<br>today?</div>
-    <p class="hf-message" data-hf-message></p><div class="store-list" id="storeList"></div>
-
-  </div>
+<div id="s-store" class="screen">
+  <header class="hf-home-head"><button class="back-btn" onclick="goTo('s-operator')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Back</button><time id="hfDate"></time></header>
+  <h1 class="hf-greeting" id="hfGreeting"></h1>
+  <p class="hf-message" data-hf-message></p>
+  <div class="hf-caption">Select a store</div>
+  <div class="hf-home-grid" id="hfHomeStores"></div>
+  <div id="storeList" hidden></div>
+  <!-- herald-portal-entry -->
+  <nav class="hf-home-nav" aria-label="Home navigation"><button onclick="goTo('s-history'); renderHist()">Past orders</button><button onclick="goTo('s-catalog')">Browse catalog</button></nav>
 </div>
 
 <!-- ══ ENTRY ══ -->
 <div id="s-entry" class="screen">
   <div class="topbar">
-    <button class="back-btn" onclick="goTo('s-operator')">
+    <button class="back-btn" onclick="goTo('s-store')">
       <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
       Back
     </button>
@@ -767,7 +761,7 @@ body::after {
 <!-- ══ HISTORY BRANCH ══ -->
 <div id="s-history" class="screen" style="justify-content:center;padding:0 28px">
   <div class="topbar" style="position:absolute;top:0;left:0;right:0">
-    <button class="back-btn" onclick="goTo('s-operator')">
+    <button class="back-btn" onclick="goTo('s-store')">
       <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
       Back
     </button>
@@ -1054,7 +1048,7 @@ body::after {
 <!-- ══ BROWSE CATALOG ══ -->
 <div id="s-catalog" class="screen">
   <div class="topbar">
-    <button class="back-btn" onclick="goTo('s-operator')">
+    <button class="back-btn" onclick="goTo('s-store')">
       <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
       Back
     </button>
@@ -1182,8 +1176,8 @@ function renderStoreBtns() {
 
 function selectOperator(name) {
   operator = name;
-  if (window.HeraldUI) { HeraldUI.choose(name); goTo('s-operator'); }
-  else { renderStoreBtns(); goTo('s-operator'); }
+  if (window.HeraldUI) { HeraldUI.choose(name); }
+  else { renderStoreBtns(); goTo('s-store'); }
 }
 
 // ── STORE SELECT ──
@@ -1794,7 +1788,7 @@ function finalise() {
   archiveOrder(); clearDraft();
   const p={store,date:new Date().toLocaleDateString('en-CA'),items:items.filter(i=>i.itemNum).map(i=>({item:i.itemNum,order:i.cases?-i.order:i.order,qoh:i.qoh}))};
   copyTxt(JSON.stringify(p,null,2),'Order saved and copied');
-  items=[]; nextId=1; renderStoreBtns(); goTo('s-operator');
+  items=[]; nextId=1; renderStoreBtns(); goTo('s-store');
 }
 function dlCSV() {
   const date=new Date().toLocaleDateString('en-CA');
@@ -1838,7 +1832,7 @@ function confirmSaveAndClear() {
   renderStoreBtns();
   resetClearBtn();
   closeExport();
-  goTo('s-operator');
+  goTo('s-store');
   showToast('Order cleared');
 }
 
@@ -2122,7 +2116,7 @@ function setOverlayCasesMode(val) {
 refreshDisp(); refreshNext(); refreshReview();
 
 // ── STARTUP SEQUENCE ──
-const APP_VERSION = 'v3.1.0';
+const APP_VERSION = 'v3.1.1';
 const VERSION_URL = 'https://project-herald.vercel.app/version.json';
 
 function suIcon(id, cls, content) {
@@ -2575,7 +2569,7 @@ function sanityAction(btn) {
   }
 }
 </script>
-<script src="herald-messages.js?v=3.1.0"></script>
-<script src="herald-ui.js?v=3.1.0"></script>
+<script src="herald-messages.js?v=3.1.1"></script>
+<script src="herald-ui.js?v=3.1.1"></script>
 </body>
 </html>
